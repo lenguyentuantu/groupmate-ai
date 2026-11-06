@@ -1,12 +1,13 @@
 import { Elysia, t } from 'elysia';
 import { assertProjectWritable, requireUser } from '#shared/access';
 import { authContext } from '#shared/auth-context';
-import { guards } from '#shared/guards';
+import { assertProjectReachable, guards } from '#shared/guards';
 import { noContent } from '#shared/http';
 import { HttpError } from '#shared/lib';
 import { paginate } from '#shared/pagination';
 import { errors } from '#shared/responses';
-import { isMcpRequest } from '#shared/mcp-request';
+import { boundProjectId, isMcpRequest } from '#shared/mcp-request';
+import { getMemberProfile, setMemberProfile } from './member-profile';
 import { mcpTool } from '#mcp/generate';
 import {
   ProjectResponse,
@@ -24,6 +25,8 @@ import { copyProject } from '#modules/projects/copy';
 import { createProjectFromTemplate } from '#modules/project-templates/service';
 import {
   TeamDetailResponse,
+  MemberProfileResponse,
+  memberProfileBody,
   TeamListResponse,
   TeamMcpResponse,
   TeamProjectDefaultsResponse,
@@ -75,6 +78,37 @@ async function requireTeamProject(teamId: number, projectId: number): Promise<vo
 export const teamRoutes = new Elysia({ name: 'teams', detail: { tags: ['Teams'] } })
   .use(authContext)
   .use(guards)
+
+  .get(
+    '/teams/:teamId/members/:userId/profile',
+    async ({ membership, params, request }) => {
+      const bound = boundProjectId(request.headers);
+      if (bound !== null) await assertProjectReachable(bound, request);
+      return getMemberProfile(membership, params.userId, bound);
+    },
+    {
+      teamMember: true,
+      params: teamMemberParams,
+      response: { 200: MemberProfileResponse, ...errors(401, 403, 404) },
+      detail: { summary: 'Read a member profile and workload from readable projects' },
+    },
+  )
+  .put(
+    '/teams/:teamId/members/:userId/profile',
+    async ({ membership, params, body, request }) => {
+      if (boundProjectId(request.headers) !== null)
+        throw new HttpError(403, 'Project-bound requests cannot edit team profiles');
+      await setMemberProfile(membership, params.userId, body);
+      return noContent();
+    },
+    {
+      teamMember: true,
+      params: teamMemberParams,
+      body: memberProfileBody,
+      response: { 204: t.Void(), ...errors(400, 401, 403, 404) },
+      detail: { summary: 'Set a member skill profile and weekly availability' },
+    },
+  )
 
   .get(
     '/teams',

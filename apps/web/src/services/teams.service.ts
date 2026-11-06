@@ -19,6 +19,9 @@ import {
 import type { MemberKind, MemberListParams } from '@/lib/api/endpoints/members';
 import { getInviteSearch } from '@/lib/api/endpoints/settings';
 import {
+  getMemberProfile,
+  setMemberProfile,
+  type MemberProfileInput,
   type TeamProjectListParams,
   type Team,
   type TeamRole,
@@ -47,6 +50,25 @@ import {
 } from '@/lib/api/endpoints/notificationSettings';
 import { DEFAULT_PAGE_SIZE } from '@/hooks/usePaging';
 import { qk } from '@/services/queryKeys';
+
+export function useMemberProfile(teamId: number, userId: string) {
+  return useQuery({
+    queryKey: qk.teamMemberProfile(teamId, userId),
+    queryFn: () => getMemberProfile(teamId, userId),
+  });
+}
+
+export function useSetMemberProfile(teamId: number, userId: string) {
+  const qc = useQueryClient();
+  const t = useTranslations('teams.profile');
+  return useMutation({
+    mutationFn: (input: MemberProfileInput) => setMemberProfile(teamId, userId, input),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: qk.teamMemberProfile(teamId, userId) });
+      toast.success(t('saved'));
+    },
+  });
+}
 
 export function useTeamsQuery() {
   return useQuery({ queryKey: qk.teams, queryFn: () => listTeams() });

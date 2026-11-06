@@ -15,6 +15,30 @@ export const teamProjectParams = t.Object({ teamId: t.Numeric(), projectId: t.Nu
 
 export const teamMemberParams = t.Object({ teamId: t.Numeric(), userId: t.String() });
 
+export const memberProfileBody = t.Object({
+  skills: t.Array(
+    t.Object({
+      name: t.String({ minLength: 1, maxLength: 60 }),
+      proficiency: t.Integer({ minimum: 1, maximum: 5 }),
+    }),
+    { maxItems: 30 },
+  ),
+  weeklyAvailabilityMinutes: t.Nullable(t.Integer({ minimum: 0, maximum: 10080 })),
+  preferences: t.String({ maxLength: 1000 }),
+});
+
+export const MemberProfileResponse = t.Composite([
+  memberProfileBody,
+  t.Object({
+    canEdit: t.Boolean(),
+    workload: t.Object({
+      activeTasks: t.Integer(),
+      knownEstimateMinutes: t.Number(),
+      unknownEstimateTasks: t.Integer(),
+    }),
+  }),
+]);
+
 export const setTeamMemberRoleBody = t.Object({
   role: t.Union([t.Literal('owner'), t.Literal('manager'), t.Literal('member')]),
 });

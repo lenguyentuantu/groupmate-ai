@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import MemberProvisionedBadge from '@/components/common/MemberProvisionedBadge';
 import TeamMemberRoleControl from './TeamMemberRoleControl';
+import TeamMemberProfileDialog from './TeamMemberProfileDialog';
 
 // One row of the team member list. An agent is a member like a person, with two
 // differences: it is addressed by its handle rather than an email, and the role column
@@ -65,6 +66,7 @@ export default function TeamMemberRow({
         {formatDate(member.joinedAt)}
       </TableCell>
       <TableCell className="px-3 py-2">
+        {!isAgent && <TeamMemberProfileDialog teamId={teamId} member={member} />}
         {canRemove && (
           <div className="flex items-center justify-end">
             <Button

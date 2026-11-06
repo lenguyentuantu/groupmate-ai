@@ -65,6 +65,32 @@ export interface TeamMember {
   joinedAt: string;
 }
 
+export interface MemberProfileInput {
+  skills: { name: string; proficiency: number }[];
+  weeklyAvailabilityMinutes: number | null;
+  preferences: string;
+}
+
+export interface MemberProfile extends MemberProfileInput {
+  canEdit: boolean;
+  workload: { activeTasks: number; knownEstimateMinutes: number; unknownEstimateTasks: number };
+}
+
+export function getMemberProfile(teamId: number, userId: string): Promise<MemberProfile> {
+  return request(`/teams/${teamId}/members/${encodeURIComponent(userId)}/profile`);
+}
+
+export function setMemberProfile(
+  teamId: number,
+  userId: string,
+  input: MemberProfileInput,
+): Promise<void> {
+  return request(`/teams/${teamId}/members/${encodeURIComponent(userId)}/profile`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
 // A project the team owns. `isMember` is the caller's own access to it: a team
 // member sees every project of the team, but only opens the ones they belong to.
 export interface TeamProject {

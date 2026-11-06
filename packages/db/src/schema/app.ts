@@ -144,6 +144,9 @@ export const teamMember = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     role: text('role').notNull().default('member'),
+    skills: jsonb('skills').$type<{ name: string; proficiency: number }[]>().notNull().default([]),
+    weeklyAvailabilityMinutes: integer('weekly_availability_minutes'),
+    preferences: text('preferences').notNull().default(''),
     // How this membership came about, read the same way as project_member.source:
     // 'scim' is a row the SCIM group reconciliation created and therefore owns, so
     // deprovisioning removes it again; everything else is 'invite' and a sync never
@@ -154,6 +157,10 @@ export const teamMember = pgTable(
   (t) => [
     primaryKey({ columns: [t.teamId, t.userId] }),
     check('team_member_role_check', sql`${t.role} IN ('owner', 'manager', 'member', 'agent')`),
+    check(
+      'team_member_availability_check',
+      sql`${t.weeklyAvailabilityMinutes} BETWEEN 0 AND 10080`,
+    ),
     check('team_member_source_check', sql`${t.source} IN ('invite', 'scim')`),
     index('team_member_user_idx').on(t.userId),
   ],

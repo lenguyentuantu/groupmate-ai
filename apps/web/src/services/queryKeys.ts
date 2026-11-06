@@ -52,6 +52,8 @@ export const qk = {
   // The members of a team and the projects it owns, each read by its own section. A
   // page is scoped by the search term and the window it was read with.
   teamMembers: (teamId: number, params: unknown) => ['team', teamId, 'members', params] as const,
+  teamMemberProfile: (teamId: number, userId: string) =>
+    ['team', teamId, 'member-profile', userId] as const,
   teamProjects: (teamId: number, params: unknown) => ['team', teamId, 'projects', params] as const,
   // Every project of the team, for the pickers and the MCP switches that act on all
   // of them.
