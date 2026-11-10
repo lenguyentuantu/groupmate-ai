@@ -143,6 +143,15 @@ export default function SidebarWorkNav({
               disabled={disabled}
             />
           )}
+          {can('documents', 'read') && (
+            <SidebarNavItem
+              href={projectKey ? `${projectPath(projectKey)}/planning` : '#'}
+              icon={Target}
+              label={t('planning')}
+              active={routeSub === 'planning'}
+              disabled={disabled}
+            />
+          )}
           {features.notes && can('note_boards', 'read') && (
             <SidebarNavItem
               href={projectKey ? notesPath(projectKey) : '#'}

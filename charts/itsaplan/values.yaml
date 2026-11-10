@@ -179,6 +179,7 @@ secrets:
 # -- External database (when postgresql.enabled is false)
 externalDatabase:
   url: ""
+  name: ""
 
 # -- External S3 (when minio.enabled is false)
 externalS3:

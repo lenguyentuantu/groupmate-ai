@@ -376,6 +376,8 @@ if (mode === 'dev') {
   // The password reaches DATABASE_URL as a URL component; a typed one may need escaping.
   const password = encodeURIComponent(env.get('POSTGRES_PASSWORD'));
 
+  env.set('NODE_ENV', 'development');
+  env.set('DATABASE_NAME', database);
   env.set('DATABASE_URL', `postgres://${user}:${password}@localhost:${dbPort}/${database}`);
   env.save();
 
@@ -411,6 +413,8 @@ if (mode === 'dev') {
   );
 
   const test = new EnvFile(file('.env.test'));
+  test.set('NODE_ENV', 'test');
+  test.set('DATABASE_NAME', testDatabase);
   test.set('DATABASE_URL', `postgres://${user}:${password}@localhost:${dbPort}/${testDatabase}`);
   test.set('API_URL', `http://localhost:${apiPort}`);
   test.set('APP_URL', env.get('APP_URL'));

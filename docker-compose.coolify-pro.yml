@@ -97,6 +97,8 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      - NODE_ENV=production
+      - DATABASE_NAME=${POSTGRES_DB:-itsaplan}
       - DATABASE_URL=postgres://${POSTGRES_USER:-itsaplan}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-itsaplan}
       # How long the dumps are kept, and the switch that upgrades without one.
       # BACKUP_DIR is not among them: the volume below pins it.
@@ -126,6 +128,7 @@ services:
       - SERVICE_URL_API_3000
       - NODE_ENV=production
       - API_PORT=3000
+      - DATABASE_NAME=${POSTGRES_DB:-itsaplan}
       - DATABASE_URL=postgres://${POSTGRES_USER:-itsaplan}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-itsaplan}
       - BETTER_AUTH_SECRET=${SERVICE_PASSWORD_64_BETTERAUTH}
       # Encrypts stored AI provider API keys at rest (AES-256-GCM). Changing it makes
@@ -170,6 +173,7 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
+      DATABASE_NAME: ${POSTGRES_DB:-itsaplan}
       DATABASE_URL: postgres://${POSTGRES_USER:-itsaplan}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-itsaplan}
       # Notification delivery sends email and Telegram messages itself, with the
       # provider credentials stored in the database — encrypted with this key, the
@@ -214,6 +218,7 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
+      DATABASE_NAME: ${POSTGRES_DB:-itsaplan}
       DATABASE_URL: postgres://${POSTGRES_USER:-itsaplan}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${POSTGRES_DB:-itsaplan}
       APP_ENCRYPTION_KEY: ${SERVICE_PASSWORD_64_ENCRYPTION}
       # The bot token itself is not set here: it is stored in the database and edited

@@ -1,6 +1,7 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { SQL } from 'bun';
 import { extendAuth } from '@repo/auth/extensions';
+import { readDatabaseEnvironment, requireTestDatabase } from '@repo/db/environment';
 
 // better-auth's scrypt is slow by design, and nearly every test creates users, so the tests
 // hash with scrypt at its lowest cost. bunfig.toml preloads this file for `bun test` only,
@@ -26,10 +27,11 @@ extendAuth({
 // own copy of the migrated test database, made afresh when the worker starts. This runs
 // before a test file imports @repo/db, which reads DATABASE_URL once.
 const worker = process.env.BUN_TEST_WORKER_ID;
+const environment = requireTestDatabase(readDatabaseEnvironment(process.env));
 if (worker) {
-  const url = new URL(process.env.DATABASE_URL!);
-  const template = url.pathname.slice(1);
-  const copy = `${template}_${worker}`;
+  const url = new URL(environment.connectionString);
+  const template = environment.expectedName;
+  const copy = `${environment.expectedName}_${worker}`;
   url.pathname = '/postgres';
   const admin = new SQL(url.toString());
   await admin.unsafe(`DROP DATABASE IF EXISTS "${copy}" WITH (FORCE)`);
@@ -37,4 +39,5 @@ if (worker) {
   await admin.close();
   url.pathname = `/${copy}`;
   process.env.DATABASE_URL = url.toString();
+  requireTestDatabase(readDatabaseEnvironment(process.env));
 }

@@ -1,7 +1,6 @@
 // Worker tuning, read from the environment once behind a lazy getter so env is
 // loaded (via --env-file / the container env) before it is read. Every value has
-// a sane default, so the worker runs with only DATABASE_URL set (validated by
-// @repo/db's client).
+// a sane default; @repo/db validates the database environment separately.
 
 import { intEnv } from './env';
 

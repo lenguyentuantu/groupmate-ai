@@ -25,6 +25,37 @@ import {
 } from 'drizzle-orm/pg-core';
 import { user } from './auth';
 
+export const planningDraft = pgTable(
+  'planning_draft',
+  {
+    id: serial('id').primaryKey(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull().default(1),
+    title: text('title').notNull(),
+    content: jsonb('content').notNull(),
+    sources: jsonb('sources').notNull().default([]),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('planning_draft_project_idx').on(t.projectId)],
+);
+
+export const planningDraftRevision = pgTable(
+  'planning_draft_revision',
+  {
+    draftId: integer('draft_id')
+      .notNull()
+      .references(() => planningDraft.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    content: jsonb('content').notNull(),
+    sources: jsonb('sources').notNull(),
+    createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.draftId, t.version] })],
+);
+
 // Global key-value settings for the instance, not scoped to a project. The value is
 // a jsonb blob owned by whatever feature reads the key, so one table backs many
 // settings.

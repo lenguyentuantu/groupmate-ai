@@ -1,5 +1,6 @@
 import { PostgresStore } from '@mastra/pg';
 import { db } from '@repo/db';
+import { readDatabaseEnvironment } from '@repo/db/environment';
 import { sql } from 'drizzle-orm';
 
 // The Postgres store Mastra keeps its own tables in, on the application database.
@@ -10,9 +11,11 @@ let store: PostgresStore | null = null;
 
 export function getStore(): PostgresStore {
   if (!store) {
-    const url = process.env.DATABASE_URL;
-    if (!url) throw new Error('DATABASE_URL is required for the agent store');
-    store = new PostgresStore({ id: 'ai-agent-memory', connectionString: url });
+    const environment = readDatabaseEnvironment(process.env);
+    store = new PostgresStore({
+      id: 'ai-agent-memory',
+      connectionString: environment.connectionString,
+    });
   }
   return store;
 }

@@ -10,6 +10,7 @@
 import { mkdir, readdir, stat, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { Sql } from 'postgres';
+import { readDatabaseEnvironment } from './environment';
 
 export const BACKUP_DIR = process.env.BACKUP_DIR || '/backups';
 
@@ -74,8 +75,7 @@ function stamp(date: Date): string {
 // Runs pg_dump into BACKUP_DIR. Throws with pg_dump's own stderr when it fails, and
 // when it writes an empty file — a truncated dump restores nothing.
 export async function writeBackup(migrations: string[]): Promise<BackupResult> {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set — cannot take a backup.');
+  const environment = readDatabaseEnvironment(process.env);
   await mkdir(BACKUP_DIR, { recursive: true });
   const createdAt = new Date();
   const path = join(BACKUP_DIR, `itsaplan-${stamp(createdAt)}.dump`);
@@ -84,7 +84,7 @@ export async function writeBackup(migrations: string[]): Promise<BackupResult> {
   // show it for as long as the dump runs; a URI without one sets no variable, so an
   // ambient PGPASSWORD or .pgpass still applies. The rest of the URI is passed as it is,
   // so every other connection option (sslmode and the like) still reaches libpq.
-  const dsn = new URL(url);
+  const dsn = new URL(environment.connectionString);
   const password = decodeURIComponent(dsn.password);
   dsn.password = '';
 

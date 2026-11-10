@@ -90,6 +90,8 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      NODE_ENV: production
+      DATABASE_NAME: ${POSTGRES_DB:-itsaplan}
       DATABASE_URL: postgres://${POSTGRES_USER:-itsaplan}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-itsaplan}
       # How long the dumps are kept, and the switch that upgrades without one.
       # BACKUP_DIR is not among them: the volume below pins it.
@@ -115,6 +117,7 @@ services:
     environment:
       NODE_ENV: production
       API_PORT: 3000
+      DATABASE_NAME: ${POSTGRES_DB:-itsaplan}
       DATABASE_URL: postgres://${POSTGRES_USER:-itsaplan}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-itsaplan}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env}
       # Encrypts stored provider credentials at rest (AES-256-GCM). Changing it
@@ -162,6 +165,7 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
+      DATABASE_NAME: ${POSTGRES_DB:-itsaplan}
       DATABASE_URL: postgres://${POSTGRES_USER:-itsaplan}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-itsaplan}
       # Notification delivery sends email and Telegram messages itself, with the
       # provider credentials stored in the database — encrypted with this key, the
@@ -200,6 +204,7 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: production
+      DATABASE_NAME: ${POSTGRES_DB:-itsaplan}
       DATABASE_URL: postgres://${POSTGRES_USER:-itsaplan}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-itsaplan}
       APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:?set APP_ENCRYPTION_KEY in .env}
 

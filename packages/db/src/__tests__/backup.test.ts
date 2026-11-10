@@ -1,9 +1,17 @@
 import { afterAll, expect, it } from 'bun:test';
 import postgres from 'postgres';
 import { pendingMigrations } from '../backup';
+import {
+  assertDatabaseIdentity,
+  readDatabaseEnvironment,
+  requireTestDatabase,
+} from '../environment';
 
 // Runs against the migrated test database, whose core table holds rows.
-const sql = postgres(process.env.DATABASE_URL!, { max: 1 });
+const environment = requireTestDatabase(readDatabaseEnvironment(process.env));
+const sql = postgres(environment.connectionString, { max: 1 });
+const [{ name }] = await sql<{ name: string }[]>`select current_database() as name`;
+assertDatabaseIdentity(environment, name);
 afterAll(() => sql.end());
 
 it('counts every migration of a build whose table does not exist yet as pending', async () => {

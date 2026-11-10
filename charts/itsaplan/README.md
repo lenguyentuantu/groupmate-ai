@@ -308,6 +308,7 @@ god mode, under **License**.
 | Key                    | Description                                                       | Default |
 |------------------------|-------------------------------------------------------------------|---------|
 | `externalDatabase.url` | Database connection string (when `postgresql.enabled` is `false`) | `""`    |
+| `externalDatabase.name` | Exact database name used by the environment guard                 | `""`    |
 | `externalS3.endpoint`  | S3 endpoint URL (when `minio.enabled` is `false`)                 | `""`    |
 
 ### PostgreSQL

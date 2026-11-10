@@ -55,6 +55,20 @@ Otherwise, use the override in .Values.externalDatabase.url.
 {{- end }}
 
 {{/*
+Compute the expected database name independently from the connection URL.
+External databases must declare it explicitly so startup can verify the target.
+*/}}
+{{- define "itsaplan.databaseName" -}}
+{{- if .Values.externalDatabase.url }}
+{{- required "externalDatabase.name is required when externalDatabase.url is set" .Values.externalDatabase.name }}
+{{- else if .Values.postgresql.enabled }}
+{{- .Values.postgresql.database }}
+{{- else }}
+{{- fail "Either postgresql.enabled must be true or externalDatabase.url must be set" }}
+{{- end }}
+{{- end }}
+
+{{/*
 Compute the S3 endpoint.
 When the built-in store is enabled, use its internal service URL.
 Otherwise, use the override in .Values.externalS3.endpoint.

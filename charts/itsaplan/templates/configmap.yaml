@@ -6,6 +6,7 @@ metadata:
     {{- include "itsaplan.labels" . | nindent 4 }}
 data:
   NODE_ENV: "production"
+  DATABASE_NAME: {{ include "itsaplan.databaseName" . | quote }}
   API_URL: {{ .Values.api.env.API_URL | quote }}
   APP_URL: {{ .Values.api.env.APP_URL | quote }}
   API_PORT: {{ .Values.api.port | quote }}

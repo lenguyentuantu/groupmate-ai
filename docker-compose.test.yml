@@ -91,6 +91,7 @@ services:
         condition: service_completed_successfully
     environment:
       NODE_ENV: test
+      DATABASE_NAME: itsaplan_test
       DATABASE_URL: postgres://itsaplan:itsaplan@postgres-test:5432/itsaplan_test
       # Any fixed secret works for a throwaway test DB.
       BETTER_AUTH_SECRET: test-secret-not-for-production-use-only
@@ -122,4 +123,5 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: test
+      DATABASE_NAME: itsaplan_test
       DATABASE_URL: postgres://itsaplan:itsaplan@postgres-test:5432/itsaplan_test

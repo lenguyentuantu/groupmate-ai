@@ -6,6 +6,11 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import {
+  assertDatabaseIdentity,
+  DatabaseEnvironmentError,
+  readDatabaseEnvironment,
+} from './environment';
+import {
   pendingMigrations,
   pruneBackups,
   recordBackup,
@@ -13,14 +18,11 @@ import {
   writeBackup,
 } from './backup';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not set — cannot run migrations.');
-}
+const environment = readDatabaseEnvironment(process.env);
 
 // max_lifetime off: postgres.js otherwise closes the connection after 30–60 minutes,
 // which would release the migration lock below while a long pg_dump is still running.
-const migrationClient = postgres(connectionString, { max: 1, max_lifetime: null });
+const migrationClient = postgres(environment.connectionString, { max: 1, max_lifetime: null });
 const db = drizzle(migrationClient);
 
 const migrationsFolder = fileURLToPath(new URL('../drizzle', import.meta.url));
@@ -41,9 +43,13 @@ const RETRY_DELAY_MS = 2000;
 
 for (let attempt = 1; ; attempt++) {
   try {
-    await migrationClient`select 1`;
+    const [{ name }] = await migrationClient<{ name: string }[]>`
+      select current_database() as name
+    `;
+    assertDatabaseIdentity(environment, name);
     break;
   } catch (error) {
+    if (error instanceof DatabaseEnvironmentError) throw error;
     if (attempt === ATTEMPTS) throw error;
     console.log(`⏳ Waiting for the database (${attempt}/${ATTEMPTS})...`);
     await Bun.sleep(RETRY_DELAY_MS);

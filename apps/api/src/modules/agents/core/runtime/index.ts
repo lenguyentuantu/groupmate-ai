@@ -59,7 +59,7 @@ type ModelConfig = {
 // integration key is the provider id; its decrypted config carries the apiKey and an
 // optional base URL. The model id is stored on the agent. OpenCode Go rejects a request
 // without an x-opencode-session header, which has to stay the same across one conversation.
-async function resolveModel(row: AiAgentRow, sessionId: string): Promise<ModelConfig> {
+export async function resolveModel(row: AiAgentRow, sessionId: string): Promise<ModelConfig> {
   if (row.modelCredentialId == null) {
     throw new HttpError(400, 'Agent has no model credential set');
   }

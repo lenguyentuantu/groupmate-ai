@@ -1,18 +1,12 @@
-import { db, defaultMemberPermissions, teamRole } from '@repo/db';
+import { db, defaultMemberPermissions, teamRole, verifyDatabaseIdentity } from '@repo/db';
+import { readDatabaseEnvironment, requireTestDatabase } from '@repo/db/environment';
 import { sql } from 'drizzle-orm';
 
-// Empties every table in the test database so each test starts clean. Two
-// guards keep this from ever running against a real database: NODE_ENV must be
-// "test" and DATABASE_URL must name a database containing "test". Call it in a
-// beforeEach (or beforeAll) in every integration test that touches the DB.
+// Empties every table in the test database so each test starts clean. Exact
+// configuration checks keep this from ever running against another environment.
 export async function resetDb(): Promise<void> {
-  const url = process.env.DATABASE_URL ?? '';
-  const dbName = url.split('/').pop()?.split('?')[0] ?? '';
-  if (process.env.NODE_ENV !== 'test' || !dbName.includes('test')) {
-    throw new Error(
-      `resetDb refused: expected NODE_ENV=test and a DATABASE_URL whose database name contains "test", got NODE_ENV=${process.env.NODE_ENV} db=${dbName}. Use .env.test.`,
-    );
-  }
+  requireTestDatabase(readDatabaseEnvironment(process.env));
+  await verifyDatabaseIdentity();
 
   // All application and better-auth tables live in the public schema. The
   // drizzle migrations bookkeeping table is excluded so migrations are not

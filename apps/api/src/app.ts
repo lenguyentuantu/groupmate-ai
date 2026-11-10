@@ -169,6 +169,7 @@ export const app = new Elysia()
             description: 'Files uploaded in an agent chat and their raw bytes',
           },
           { name: 'Imports', description: 'Import drafts that turn an uploaded file into issues' },
+          { name: 'Planning', description: 'Project-scoped WBS drafts and revisions' },
           {
             name: 'Import/Export',
             description:

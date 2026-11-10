@@ -1,17 +1,45 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import {
+  assertDatabaseIdentity,
+  DatabaseEnvironmentError,
+  readDatabaseEnvironment,
+} from './environment';
 import * as schema from './schema';
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error(
-    'DATABASE_URL is not set. Check your .env (see .env.example at the monorepo root).',
-  );
-}
+const environment = readDatabaseEnvironment(process.env);
 
 // One connection per process. postgres-js manages the pool internally.
-const queryClient = postgres(connectionString, { prepare: false });
+const queryClient = postgres(environment.connectionString, { prepare: false });
+let identityVerified = false;
+
+export async function verifyDatabaseIdentity(): Promise<void> {
+  if (identityVerified) return;
+  const [{ name }] = await queryClient<{ name: string }[]>`
+    select current_database() as name
+  `;
+  assertDatabaseIdentity(environment, name);
+  identityVerified = true;
+}
+
+export async function waitForDatabaseIdentity({
+  retryDelayMs,
+  onRetry,
+}: {
+  retryDelayMs: number;
+  onRetry?: () => void;
+}): Promise<void> {
+  for (;;) {
+    try {
+      await verifyDatabaseIdentity();
+      return;
+    } catch (error) {
+      if (error instanceof DatabaseEnvironmentError) throw error;
+      onRetry?.();
+      await Bun.sleep(retryDelayMs);
+    }
+  }
+}
 
 export const db = drizzle(queryClient, { schema });
 

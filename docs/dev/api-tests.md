@@ -20,8 +20,9 @@ docker compose -f docker-compose.dev.yml exec -T postgres \
 bun run db:migrate:test          # repo root
 ```
 
-The database name must contain `test` and `NODE_ENV` must be `test`: `resetDb` refuses to run
-otherwise. The Postgres role must be a superuser, as the dev role is: `resetDb` sets
+`DATABASE_NAME` must be the exact test database base name and `NODE_ENV` must be `test`:
+`resetDb` refuses to run otherwise. Parallel workers may use only numeric suffixes on that base
+name. The Postgres role must be a superuser, as the dev role is: `resetDb` sets
 `session_replication_role`, and the preload creates databases.
 
 Tests do not migrate. After a new migration, run `bun run db:migrate:test`.
