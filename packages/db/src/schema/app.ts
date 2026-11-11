@@ -108,6 +108,56 @@ export const planningApproval = pgTable(
 // Global key-value settings for the instance, not scoped to a project. The value is
 // a jsonb blob owned by whatever feature reads the key, so one table backs many
 // settings.
+export const monitoringRun = pgTable(
+  'monitoring_run',
+  {
+    id: serial('id').primaryKey(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    evaluatedAt: timestamp('evaluated_at', { withTimezone: true }).notNull(),
+    status: text('status').notNull(),
+    totalFindings: integer('total_findings').notNull().default(0),
+    newAlerts: integer('new_alerts').notNull().default(0),
+    ongoingAlerts: integer('ongoing_alerts').notNull().default(0),
+    resolvedAlerts: integer('resolved_alerts').notNull().default(0),
+    error: text('error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check('monitoring_run_status_check', sql`${t.status} IN ('succeeded', 'failed')`),
+    index('monitoring_run_project_idx').on(t.projectId, t.createdAt),
+  ],
+);
+
+export const monitoringAlert = pgTable(
+  'monitoring_alert',
+  {
+    id: serial('id').primaryKey(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    findingKey: text('finding_key').notNull(),
+    issueId: integer('issue_id')
+      .notNull()
+      .references(() => issue.id, { onDelete: 'cascade' }),
+    rule: text('rule').notNull(),
+    severity: text('severity').notNull(),
+    evidence: text('evidence').notNull(),
+    explanation: text('explanation').notNull(),
+    nextAction: text('next_action').notNull(),
+    firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp('last_seen_at', { withTimezone: true }).notNull(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    status: text('status').notNull().default('active'),
+  },
+  (t) => [
+    uniqueIndex('monitoring_alert_project_finding_uq').on(t.projectId, t.findingKey),
+    index('monitoring_alert_project_status_idx').on(t.projectId, t.status, t.lastSeenAt),
+    check('monitoring_alert_status_check', sql`${t.status} IN ('active', 'resolved')`),
+  ],
+);
+
 export const appSetting = pgTable('app_setting', {
   key: text('key').primaryKey(),
   value: jsonb('value').notNull(),
