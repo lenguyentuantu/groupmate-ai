@@ -20,6 +20,7 @@ import { listSources, uploadSource } from './sources';
 import { generateDraft } from './generation';
 import { boundProjectId } from '#shared/mcp-request';
 import { HttpError } from '#shared/lib';
+import { getLaunchPreview, getLaunchReceipt, publishLaunch } from './launch-service';
 
 export const planningRoutes = new Elysia({ name: 'planning', detail: { tags: ['Planning'] } })
   .use(authContext)
@@ -192,5 +193,42 @@ export const planningRoutes = new Elysia({ name: 'planning', detail: { tags: ['P
       permission: ['documents', 'edit'],
       response: { 200: model.assignmentResponse, ...commonErrors, ...errors(409) },
       detail: { summary: 'Save a planning assignment proposal without changing the WBS' },
+    },
+  )
+  .get(
+    '/projects/:projectKey/planning/:draftId/launch-preview',
+    ({ project, params }) => getLaunchPreview(project.id, params.draftId),
+    {
+      params: model.draftParams,
+      projectOwner: true,
+      response: { 200: model.launchResponse, ...commonErrors },
+      detail: { summary: 'Review deterministic execution readiness and the launch baseline' },
+    },
+  )
+  .post(
+    '/projects/:projectKey/planning/:draftId/launch',
+    ({ project, params, user, body }) =>
+      publishLaunch({
+        projectId: project.id,
+        draftId: params.draftId,
+        actorUserId: requireUser(user).id,
+        ...body,
+      }),
+    {
+      params: model.draftParams,
+      body: model.launchApprovalBody,
+      projectOwner: true,
+      response: { 200: model.launchResponse, ...commonErrors, ...errors(409, 500) },
+      detail: { summary: 'Approve a launch baseline and atomically publish Work Items' },
+    },
+  )
+  .get(
+    '/projects/:projectKey/planning/:draftId/launch-receipt',
+    ({ project, params }) => getLaunchReceipt(project.id, params.draftId),
+    {
+      params: model.draftParams,
+      projectOwner: true,
+      response: { 200: model.launchResponse, ...commonErrors },
+      detail: { summary: 'Recover the immutable launch approval receipt' },
     },
   );

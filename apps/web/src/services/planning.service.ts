@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import * as api from '@/lib/api/endpoints/planning';
 import type { PageParams } from '@/lib/api/core/paging';
+import { qk } from './queryKeys';
 
 const key = (ref: string) => ['planning', ref] as const;
 export const usePlanDrafts = (ref: string, page: PageParams) =>
@@ -87,7 +88,39 @@ export function useSaveAssignmentProposal(ref: string, id: number) {
     mutationFn: (input: Parameters<typeof api.saveAssignmentProposal>[2]) =>
       api.saveAssignmentProposal(ref, id, input),
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: [...key(ref), id, 'proposal'] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: [...key(ref), id, 'proposal'] }),
+        qc.invalidateQueries({ queryKey: [...key(ref), id, 'launch-preview'] }),
+      ]);
+    },
+  });
+}
+export const useLaunchPreview = (ref: string, id: number) =>
+  useQuery({
+    queryKey: [...key(ref), id, 'launch-preview'],
+    queryFn: () => api.getLaunchPreview(ref, id),
+  });
+export const useLaunchReceipt = (ref: string, id: number) =>
+  useQuery({
+    queryKey: [...key(ref), id, 'launch-receipt'],
+    queryFn: () => api.getLaunchReceipt(ref, id),
+    enabled: id > 0,
+  });
+export function useApproveLaunch(ref: string, id: number) {
+  const qc = useQueryClient();
+  const t = useTranslations('documents.planning.launch');
+  return useMutation({
+    mutationFn: (input: Parameters<typeof api.approveLaunch>[2]) =>
+      api.approveLaunch(ref, id, input),
+    retry: false,
+    meta: { suppressErrorToast: true },
+    onSuccess: (receipt) => {
+      qc.setQueryData([...key(ref), id, 'launch-receipt'], receipt);
+      void Promise.all([
+        qc.invalidateQueries({ queryKey: [...key(ref), id, 'launch-preview'] }),
+        qc.invalidateQueries({ queryKey: qk.boardIssues(ref) }),
+      ]);
+      toast.success(t('approvalComplete'));
     },
   });
 }

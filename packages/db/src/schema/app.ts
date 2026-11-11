@@ -69,6 +69,42 @@ export const planningProposal = pgTable('planning_proposal', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const planningApproval = pgTable(
+  'planning_approval',
+  {
+    id: serial('id').primaryKey(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    draftId: integer('draft_id')
+      .notNull()
+      .references(() => planningDraft.id, { onDelete: 'no action' }),
+    sourceVersion: integer('source_version').notNull(),
+    proposalId: integer('proposal_id')
+      .notNull()
+      .references(() => planningProposal.id, { onDelete: 'no action' }),
+    proposalVersion: integer('proposal_version').notNull(),
+    intentId: uuid('intent_id').notNull().unique(),
+    approvedByUserId: text('approved_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    approvedByActorId: text('approved_by_actor_id').notNull(),
+    approvedByActorName: text('approved_by_actor_name').notNull(),
+    acknowledgedRiskCodes: jsonb('acknowledged_risk_codes').notNull().default([]),
+    baseline: jsonb('baseline').notNull(),
+    workItemMappings: jsonb('work_item_mappings').notNull(),
+    approvedAt: timestamp('approved_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('planning_approval_wbs_revision_uq').on(t.projectId, t.draftId, t.sourceVersion),
+    index('planning_approval_project_idx').on(t.projectId, t.approvedAt),
+    check(
+      'planning_approval_versions_check',
+      sql`${t.sourceVersion} > 0 AND ${t.proposalVersion} > 0`,
+    ),
+  ],
+);
+
 // Global key-value settings for the instance, not scoped to a project. The value is
 // a jsonb blob owned by whatever feature reads the key, so one table backs many
 // settings.

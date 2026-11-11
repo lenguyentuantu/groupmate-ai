@@ -25,6 +25,15 @@ export const assignmentBody = t.Object({
   proposal: t.Optional(t.Any()),
   version: t.Optional(t.Integer({ minimum: 1 })),
 });
+export const launchApprovalBody = t.Object({
+  wbsVersion: t.Integer({ minimum: 1 }),
+  proposalVersion: t.Integer({ minimum: 1 }),
+  intentId: t.String({ format: 'uuid' }),
+  acknowledgedRiskCodes: t.Array(t.String({ minLength: 1, maxLength: 80 }), {
+    maxItems: 20,
+    uniqueItems: true,
+  }),
+});
 export const uploadBody = t.Object({
   filename: t.String({ minLength: 1, maxLength: 255 }),
   contentBase64: t.String({ maxLength: 14000000 }),
@@ -57,3 +66,4 @@ export const revisionListResponse = pageResponse(
   t.Object({ version: t.Number(), createdAt: t.String(), createdByUserId: t.Nullable(t.String()) }),
 );
 export const assignmentResponse = t.Any();
+export const launchResponse = t.Any();

@@ -1,4 +1,4 @@
-import { request } from '@/lib/api/core/client';
+import { ApiError, request } from '@/lib/api/core/client';
 import { pageQuery, type Page, type PageParams } from '@/lib/api/core/paging';
 
 export interface PlanTask {
@@ -88,6 +88,102 @@ export interface PlanningProposal {
   warnings: string[];
   aiEnrichment?: 'applied' | 'not_requested' | 'failed';
   updatedAt?: string;
+}
+export interface ReadinessIssue {
+  code: string;
+  severity: 'blocker' | 'risk';
+  affectedTaskIds: string[];
+  explanation: string;
+  nextAction: string;
+}
+export interface ExecutionBaselineTask {
+  sourceTaskId: string;
+  workPackageId: string | null;
+  title: string;
+  description: string;
+  priority: PlanTask['priority'];
+  estimateMinutes: number | null;
+  deliverable: string;
+  acceptanceCriteria: string[];
+  requiredSkills: string[];
+  sourceRefs: string[];
+  assigneeUserId: string | null;
+  dependencyTaskIds: string[];
+  relativeWeek: number | null;
+}
+export interface ExecutionBaseline {
+  project: { id: number; teamId: number; key: string; name: string };
+  source: { draftId: number; wbsVersion: number; proposalId: number; proposalVersion: number };
+  title: string;
+  deadline: string | null;
+  assumptions: string[];
+  readinessRisks: ReadinessIssue[];
+  workPackages: {
+    sourceTaskId: string;
+    title: string;
+    deliverable: string;
+    actionableTaskIds: string[];
+  }[];
+  tasks: ExecutionBaselineTask[];
+  execution: {
+    readyTaskIds: string[];
+    phases: { order: number; taskIds: string[] }[];
+    parallelTaskGroups: string[][];
+    bottleneckTaskIds: string[];
+  };
+  checkpoints: {
+    sourceWorkPackageId: string;
+    title: string;
+    deliverable: string;
+    taskIds: string[];
+  }[];
+  mappingStrategy: string;
+}
+export interface LaunchPreview {
+  status: 'blocked' | 'needs_review' | 'ready';
+  blockers: ReadinessIssue[];
+  risks: ReadinessIssue[];
+  recommendations: { issueCode: string; action: string; affectedTaskIds: string[] }[];
+  source: ExecutionBaseline['source'] | null;
+  summary: {
+    actionableTaskCount: number;
+    aggregateWorkPackageCount: number;
+    assignedTaskCount: number;
+    unassignedTaskCount: number;
+    knownEffortMinutes: number;
+    unknownEstimateTaskCount: number;
+    knownAllocations: {
+      memberId: string;
+      memberName: string;
+      minutes: number;
+      unknownEstimateTaskCount: number;
+      weeklyCapacityMinutes: number | null;
+      existingKnownWorkloadMinutes: number | null;
+      unknownWorkloadTasks: number;
+    }[];
+    credibleExecutionPlan: boolean;
+  };
+  baseline: ExecutionBaseline | null;
+}
+export interface ApprovalReceipt {
+  id: number;
+  projectId: number;
+  draftId: number;
+  wbsVersion: number;
+  proposalId: number;
+  proposalVersion: number;
+  intentId: string;
+  approvedByUserId: string;
+  approvedByUserName: string;
+  approvedAt: string;
+  acknowledgedRiskCodes: string[];
+  baseline: ExecutionBaseline;
+  workItemMappings: {
+    sourceTaskId: string;
+    workItemId: number;
+    sequenceNumber: number;
+    dependencyWorkItemIds: number[];
+  }[];
 }
 interface SavedPlanningProposalResponse {
   id: number;
@@ -231,3 +327,24 @@ export const saveAssignmentProposal = (
     method: 'PUT',
     body: JSON.stringify(input),
   }).then(normalizePlanningProposalResponse);
+export const getLaunchPreview = (ref: string, id: number) =>
+  request<LaunchPreview>(`${base(ref)}/${id}/launch-preview`);
+export const getLaunchReceipt = (ref: string, id: number) =>
+  request<ApprovalReceipt>(`${base(ref)}/${id}/launch-receipt`).catch((error: unknown) => {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  });
+export const approveLaunch = (
+  ref: string,
+  id: number,
+  input: {
+    wbsVersion: number;
+    proposalVersion: number;
+    intentId: string;
+    acknowledgedRiskCodes: string[];
+  },
+) =>
+  request<ApprovalReceipt>(`${base(ref)}/${id}/launch`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });

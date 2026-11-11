@@ -59,7 +59,7 @@ const skillAliases = new Map([
   ['documentation writing', 'documentation'],
 ]);
 
-function normalizeSkill(value: string) {
+export function normalizeSkill(value: string) {
   const normalized = value.trim().toLowerCase().replace(/\s+/g, ' ');
   return skillAliases.get(normalized) ?? normalized;
 }
