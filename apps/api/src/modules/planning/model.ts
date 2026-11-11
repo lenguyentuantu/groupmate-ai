@@ -17,6 +17,14 @@ export const generateBody = t.Object({
   agentId: t.Integer({ minimum: 1 }),
   version: t.Integer({ minimum: 1 }),
 });
+export const assignmentBody = t.Object({
+  sourceVersion: t.Integer({ minimum: 1 }),
+  agentId: t.Optional(t.Integer({ minimum: 1 })),
+  provisionalCandidates: t.Optional(t.Any()),
+  overrides: t.Optional(t.Any()),
+  proposal: t.Optional(t.Any()),
+  version: t.Optional(t.Integer({ minimum: 1 })),
+});
 export const uploadBody = t.Object({
   filename: t.String({ minLength: 1, maxLength: 255 }),
   contentBase64: t.String({ maxLength: 14000000 }),
@@ -48,3 +56,4 @@ export const revisionResponse = t.Object({
 export const revisionListResponse = pageResponse(
   t.Object({ version: t.Number(), createdAt: t.String(), createdByUserId: t.Nullable(t.String()) }),
 );
+export const assignmentResponse = t.Any();

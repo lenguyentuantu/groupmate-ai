@@ -56,6 +56,19 @@ export const planningDraftRevision = pgTable(
   (t) => [primaryKey({ columns: [t.draftId, t.version] })],
 );
 
+export const planningProposal = pgTable('planning_proposal', {
+  id: serial('id').primaryKey(),
+  draftId: integer('draft_id')
+    .notNull()
+    .unique()
+    .references(() => planningDraft.id, { onDelete: 'cascade' }),
+  sourceVersion: integer('source_version').notNull(),
+  version: integer('version').notNull().default(1),
+  content: jsonb('content').notNull(),
+  createdByUserId: text('created_by_user_id').references(() => user.id, { onDelete: 'set null' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Global key-value settings for the instance, not scoped to a project. The value is
 // a jsonb blob owned by whatever feature reads the key, so one table backs many
 // settings.

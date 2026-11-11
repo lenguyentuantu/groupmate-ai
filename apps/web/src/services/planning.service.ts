@@ -63,3 +63,31 @@ export function useGeneratePlan(ref: string, id?: number) {
       api.generatePlan(ref, id!, agentId, version),
   });
 }
+export const useAssignmentInputs = (ref: string, id: number | undefined) =>
+  useQuery({
+    queryKey: [...key(ref), id, 'assignment-inputs'],
+    queryFn: () => api.getAssignmentInputs(ref, id!),
+    enabled: id !== undefined,
+  });
+export const useAssignmentProposal = (ref: string, id: number | undefined) =>
+  useQuery({
+    queryKey: [...key(ref), id, 'proposal'],
+    queryFn: () => api.getAssignmentProposal(ref, id!),
+    enabled: id !== undefined,
+  });
+export function useGenerateAssignmentProposal(ref: string, id: number) {
+  return useMutation({
+    mutationFn: (input: Parameters<typeof api.generateAssignmentProposal>[2]) =>
+      api.generateAssignmentProposal(ref, id, input),
+  });
+}
+export function useSaveAssignmentProposal(ref: string, id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof api.saveAssignmentProposal>[2]) =>
+      api.saveAssignmentProposal(ref, id, input),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: [...key(ref), id, 'proposal'] });
+    },
+  });
+}

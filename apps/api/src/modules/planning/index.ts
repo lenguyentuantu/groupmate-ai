@@ -5,7 +5,17 @@ import { assertPermission, requireUser } from '#shared/access';
 import { commonErrors, errors } from '#shared/responses';
 import { paginate, pageResponse } from '#shared/pagination';
 import * as model from './model';
-import { getDraft, saveDraft, listDrafts, listRevisions, getRevision } from './service';
+import {
+  getAssignmentInputs,
+  getAssignmentProposal,
+  getDraft,
+  saveAssignmentProposal,
+  saveDraft,
+  listDrafts,
+  listRevisions,
+  getRevision,
+  generateAssignmentProposal,
+} from './service';
 import { listSources, uploadSource } from './sources';
 import { generateDraft } from './generation';
 import { boundProjectId } from '#shared/mcp-request';
@@ -135,5 +145,52 @@ export const planningRoutes = new Elysia({ name: 'planning', detail: { tags: ['P
       detail: {
         summary: 'Explicitly generate a WBS preview without changing the saved draft or work items',
       },
+    },
+  )
+  .get(
+    '/projects/:projectKey/planning/:draftId/assignment-inputs',
+    ({ project, params }) => getAssignmentInputs(project.id, params.draftId),
+    {
+      params: model.draftParams,
+      permission: ['documents', 'read'],
+      response: { 200: model.assignmentResponse, ...commonErrors },
+      detail: { summary: 'Read planning assignment inputs' },
+    },
+  )
+  .get(
+    '/projects/:projectKey/planning/:draftId/proposal',
+    ({ project, params }) => getAssignmentProposal(project.id, params.draftId),
+    {
+      params: model.draftParams,
+      permission: ['documents', 'read'],
+      response: { 200: model.assignmentResponse, ...commonErrors },
+      detail: { summary: 'Read a saved planning assignment proposal' },
+    },
+  )
+  .post(
+    '/projects/:projectKey/planning/:draftId/proposal/generate',
+    async ({ project, params, user, body }) => {
+      const actor = requireUser(user);
+      if (body.agentId) await assertPermission(project.id, actor, 'ai_agents', 'read');
+      return generateAssignmentProposal(project.id, params.draftId, actor.id, body);
+    },
+    {
+      params: model.draftParams,
+      body: model.assignmentBody,
+      permission: ['documents', 'edit'],
+      response: { 200: model.assignmentResponse, ...commonErrors, ...errors(409) },
+      detail: { summary: 'Generate a deterministic assignment proposal preview' },
+    },
+  )
+  .put(
+    '/projects/:projectKey/planning/:draftId/proposal',
+    ({ project, params, user, body }) =>
+      saveAssignmentProposal(project.id, params.draftId, requireUser(user).id, body),
+    {
+      params: model.draftParams,
+      body: model.assignmentBody,
+      permission: ['documents', 'edit'],
+      response: { 200: model.assignmentResponse, ...commonErrors, ...errors(409) },
+      detail: { summary: 'Save a planning assignment proposal without changing the WBS' },
     },
   );

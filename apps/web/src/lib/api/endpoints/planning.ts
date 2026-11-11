@@ -51,6 +51,111 @@ export interface PlanRevision {
   content: Plan;
   sources: PlanSource[];
 }
+export interface PlanningCandidate {
+  id: string;
+  name: string;
+  isRealMember: boolean;
+  skills: string[];
+  weeklyCapacityMinutes: number | null;
+  knownWorkloadMinutes: number | null;
+  unknownWorkloadTasks: number;
+}
+export interface ProposalAssignment {
+  taskId: string;
+  candidateId: string | null;
+  matchingSkills: string[];
+  missingSkills: string[];
+  reason: string;
+  warning: string | null;
+  allocatedMinutes: number;
+  remainingCapacityMinutes: number | null;
+}
+export interface PlanningProposal {
+  id?: number;
+  draftId?: number;
+  version?: number;
+  sourceVersion: number;
+  stale?: boolean;
+  candidates: PlanningCandidate[];
+  assignments: ProposalAssignment[];
+  schedule: {
+    taskId: string;
+    order: number;
+    relativeWeek: number | null;
+    dependencyTaskIds: string[];
+    canRunInParallel: boolean;
+  }[];
+  warnings: string[];
+  aiEnrichment?: 'applied' | 'not_requested' | 'failed';
+  updatedAt?: string;
+}
+interface SavedPlanningProposalResponse {
+  id: number;
+  draftId: number;
+  version: number;
+  sourceVersion: number;
+  stale: boolean;
+  content: unknown;
+  updatedAt: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function requireArray(value: unknown, field: string): unknown[] {
+  if (!Array.isArray(value))
+    throw new Error(`Invalid planning proposal: ${field} must be an array`);
+  return value;
+}
+
+export function normalizePlanningProposalResponse(value: unknown): PlanningProposal {
+  const saved = isRecord(value) && 'content' in value;
+  const metadata = saved && isRecord(value) ? value : {};
+  const content = saved ? metadata.content : value;
+  if (!isRecord(content)) throw new Error('Invalid planning proposal: content is required');
+  const assignments = requireArray(content.assignments, 'assignments');
+  const candidates = requireArray(content.candidates, 'candidates');
+  const schedule = requireArray(content.schedule, 'schedule');
+  const warnings = content.warnings === undefined ? [] : requireArray(content.warnings, 'warnings');
+  if (
+    (saved &&
+      (typeof metadata.id !== 'number' ||
+        typeof metadata.draftId !== 'number' ||
+        typeof metadata.version !== 'number' ||
+        typeof metadata.sourceVersion !== 'number' ||
+        typeof metadata.stale !== 'boolean' ||
+        typeof metadata.updatedAt !== 'string')) ||
+    typeof content.sourceVersion !== 'number'
+  )
+    throw new Error('Invalid planning proposal metadata');
+  return {
+    ...(saved
+      ? {
+          id: metadata.id as number,
+          draftId: metadata.draftId as number,
+          version: metadata.version as number,
+          sourceVersion: metadata.sourceVersion as number,
+          stale: metadata.stale as boolean,
+          updatedAt: metadata.updatedAt as string,
+        }
+      : { sourceVersion: content.sourceVersion as number }),
+    candidates: candidates as PlanningCandidate[],
+    assignments: assignments as ProposalAssignment[],
+    schedule: schedule as PlanningProposal['schedule'],
+    warnings: warnings as string[],
+    ...(content.aiEnrichment !== undefined
+      ? { aiEnrichment: content.aiEnrichment as PlanningProposal['aiEnrichment'] }
+      : {}),
+  };
+}
+
+export function summarizePlanningWarnings(warnings: string[]) {
+  const counts = new Map<string, number>();
+  for (const warning of warnings) counts.set(warning, (counts.get(warning) ?? 0) + 1);
+  return [...counts].map(([message, count]) => ({ message, count }));
+}
+
 const base = (ref: string) => `/projects/${encodeURIComponent(ref)}/planning`;
 export const listPlanDrafts = (ref: string, page: PageParams) =>
   request<Page<Pick<PlanDraft, 'id' | 'title' | 'version' | 'updatedAt'>>>(
@@ -86,3 +191,43 @@ export const generatePlan = (ref: string, id: number, agentId: number, version: 
       body: JSON.stringify({ agentId, version }),
     },
   );
+export const getAssignmentInputs = (ref: string, id: number) =>
+  request<{
+    draftId: number;
+    sourceVersion: number;
+    tasks: PlanTask[];
+    candidates: PlanningCandidate[];
+  }>(`${base(ref)}/${id}/assignment-inputs`);
+export const getAssignmentProposal = (ref: string, id: number) =>
+  request<SavedPlanningProposalResponse | null>(`${base(ref)}/${id}/proposal`).then((value) =>
+    value === null ? null : normalizePlanningProposalResponse(value),
+  );
+export const generateAssignmentProposal = (
+  ref: string,
+  id: number,
+  input: {
+    sourceVersion: number;
+    agentId?: number;
+    provisionalCandidates?: PlanningCandidate[];
+    overrides?: Record<string, string | null>;
+  },
+) =>
+  request<unknown>(`${base(ref)}/${id}/proposal/generate`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  }).then(normalizePlanningProposalResponse);
+export const saveAssignmentProposal = (
+  ref: string,
+  id: number,
+  input: {
+    sourceVersion: number;
+    provisionalCandidates?: PlanningCandidate[];
+    overrides?: Record<string, string | null>;
+    proposal?: PlanningProposal;
+    version?: number;
+  },
+) =>
+  request<unknown>(`${base(ref)}/${id}/proposal`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  }).then(normalizePlanningProposalResponse);

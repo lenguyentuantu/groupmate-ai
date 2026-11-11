@@ -10,6 +10,7 @@ import PlanningGeneration from './PlanningGeneration';
 import PlanningSources from './PlanningSources';
 import PlanningReview from './PlanningReview';
 import PlanningHistory from './PlanningHistory';
+import PlanningAssignment from './PlanningAssignment';
 
 const empty: Plan = {
   title: '',
@@ -116,6 +117,14 @@ export default function PlanningEditor({
         saving={save.isPending}
         onPending={setGenerating}
       />
+      {draft && (
+        <PlanningAssignment
+          projectRef={projectRef}
+          draftId={draft.id}
+          draftVersion={version}
+          canEdit={canEdit}
+        />
+      )}
       <details>
         <summary>{t('sourcePreview')}</summary>
         <PlanningReview
