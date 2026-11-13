@@ -1,5 +1,5 @@
 import { db, monitoringAlert, monitoringRun, project } from '@repo/db';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { MonitoringFinding, MonitoringResult } from './service';
 
 type MonitoringTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -88,6 +88,7 @@ export async function persistMonitoringResult(
           explanation: finding.explanation,
           nextAction: finding.nextAction,
           lastSeenAt: evaluatedAt,
+          firstSeenAt: sql`CASE WHEN ${monitoringAlert.status} = 'resolved' THEN ${evaluatedAt.toISOString()}::timestamptz ELSE ${monitoringAlert.firstSeenAt} END`,
           resolvedAt: null,
           status: 'active',
         },

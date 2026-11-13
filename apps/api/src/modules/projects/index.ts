@@ -24,6 +24,7 @@ import {
   ProjectResponse,
   ProjectSearchPageResponse,
   ProjectSettingsResponse,
+  MonitoringSettingsResponse,
   SubtaskAutomationResponse,
   copyProjectBody,
   listProjectsQuery,
@@ -32,6 +33,7 @@ import {
   updateEstimatesBody,
   updateProjectBody,
   updateProjectSettingsBody,
+  updateMonitoringSettingsBody,
   updateSubtaskAutomationBody,
 } from './model';
 import {
@@ -47,6 +49,7 @@ import {
   setSubtaskAutomationSettings,
   setEstimateSettings,
 } from './service';
+import { getMonitoringSettings, setMonitoringSchedule } from '#modules/monitoring/scheduler';
 import { copyProject } from './copy';
 import { projectPreferences } from './preferences';
 
@@ -222,6 +225,29 @@ export const projectRoutes = new Elysia({ name: 'projects', detail: { tags: ['Pr
           'A key that another project of the team has is refused with 409.',
         ...mcpTool('update_project'),
       },
+    },
+  )
+
+  .get(
+    '/projects/:projectKey/settings/monitoring',
+    ({ project }) => getMonitoringSettings(project.id),
+    {
+      projectMember: true,
+      response: { 200: MonitoringSettingsResponse, ...accessErrors },
+      detail: { summary: "Get a project's monitoring schedule" },
+    },
+  )
+  .patch(
+    '/projects/:projectKey/settings/monitoring',
+    async ({ project, body }) => {
+      await setMonitoringSchedule(project.id, body);
+      return getMonitoringSettings(project.id);
+    },
+    {
+      body: updateMonitoringSettingsBody,
+      projectOwner: true,
+      response: { 200: MonitoringSettingsResponse, ...commonErrors },
+      detail: { summary: "Update a project's monitoring schedule" },
     },
   )
 

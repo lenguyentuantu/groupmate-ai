@@ -276,6 +276,24 @@ export const updateProjectSettingsBody = t.Object({
   features: t.Optional(t.Partial(FeaturesResponse)),
 });
 
+export const MonitoringSettingsResponse = t.Object({
+  enabled: t.Boolean(),
+  frequency: t.Union([t.Literal('daily'), t.Literal('weekdays')]),
+  hour: t.Integer({ minimum: 0, maximum: 23 }),
+  minute: t.Integer({ minimum: 0, maximum: 59 }),
+  timeZone: t.Literal('Asia/Ho_Chi_Minh'),
+  lastRunAt: t.Nullable(t.String()),
+  lastRunStatus: t.Nullable(t.String()),
+});
+
+export const updateMonitoringSettingsBody = t.Object({
+  enabled: t.Boolean(),
+  frequency: t.Union([t.Literal('daily'), t.Literal('weekdays')]),
+  hour: t.Integer({ minimum: 0, maximum: 23 }),
+  minute: t.Integer({ minimum: 0, maximum: 59 }),
+  timeZone: t.Literal('Asia/Ho_Chi_Minh'),
+});
+
 // Ten years, well inside the range make_interval and a timestamp can hold.
 export const MAX_AUTO_ARCHIVE_DAYS = 3650;
 

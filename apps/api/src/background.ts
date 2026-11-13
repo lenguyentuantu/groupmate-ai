@@ -5,6 +5,7 @@ import { agentInvocationConfig, dispatchInvocations } from '#modules/agents/invo
 import { pruneAgentTraces } from '#modules/agents/core/runtime/trace-retention';
 import { sweepStaleIssues } from '#modules/issues/auto-archive';
 import { sweepExpiredShares } from '#modules/share/service';
+import { runScheduledMonitoring } from '#modules/monitoring/scheduler';
 
 // The api's background jobs, started by index.ts rather than assembled into the app,
 // so importing the app in a test starts nothing. Several api replicas run them without
@@ -27,6 +28,7 @@ export function startBackgroundJobs(): void {
   // token away; once a minute keeps the stored state close to what users see.
   startLoop('share-expiry', expireShares, () => intEnv('SHARE_EXPIRY_INTERVAL_MS', 60_000));
   startLoop('agent-traces', pruneTraces, () => intEnv('AGENT_TRACE_PRUNE_INTERVAL_MS', 3_600_000));
+  startLoop('monitoring', runMonitoring, () => 300_000);
 }
 
 async function autoArchive(): Promise<void> {
@@ -58,6 +60,12 @@ async function sendInvocations(): Promise<void> {
 async function pruneTraces(): Promise<void> {
   const deleted = await pruneAgentTraces();
   if (deleted > 0) console.log(`[background] pruned ${deleted} agent trace spans`);
+}
+
+async function runMonitoring(): Promise<void> {
+  const processed = await runScheduledMonitoring();
+  if (processed.length > 0)
+    console.log(`[background] monitored ${processed.length} opted-in project(s)`);
 }
 
 function startLoop(name: string, job: () => Promise<void>, intervalMs: () => number): void {

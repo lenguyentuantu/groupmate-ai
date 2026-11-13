@@ -430,7 +430,13 @@ describe('SCIM users', () => {
           timeout: null,
         },
       });
-      const events = { assigned: true, mentioned: true, commented: true, state_changed: true };
+      const events = {
+        assigned: true,
+        mentioned: true,
+        commented: true,
+        state_changed: true,
+        monitoring: false,
+      };
       await member.api.projects({ projectKey: 'MKT' })['notification-preferences'].put({
         emailEvents: events,
         telegramEvents: events,

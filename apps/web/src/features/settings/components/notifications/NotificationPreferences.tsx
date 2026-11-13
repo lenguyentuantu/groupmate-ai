@@ -32,7 +32,7 @@ export default function NotificationPreferences({ form }: { form: NotificationPr
             {NOTIFICATION_EVENTS.map((event) => (
               <ChannelRow
                 key={event}
-                label={t(`events.${event}`)}
+                label={event === 'monitoring' ? 'Monitoring' : t(`events.${event}`)}
                 emailChecked={emailEvents[event]}
                 telegramChecked={telegramEvents[event]}
                 onEmail={(v) => setEmailEvents({ ...emailEvents, [event]: v })}

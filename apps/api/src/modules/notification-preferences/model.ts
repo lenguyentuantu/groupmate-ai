@@ -5,6 +5,7 @@ const EventToggles = t.Object({
   mentioned: t.Boolean(),
   commented: t.Boolean(),
   state_changed: t.Boolean(),
+  monitoring: t.Boolean(),
 });
 
 // Request body of the PUT and the response of both routes.

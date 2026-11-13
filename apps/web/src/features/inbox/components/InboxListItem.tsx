@@ -5,6 +5,7 @@ import {
   AtSign,
   CircleDot,
   Clock,
+  Activity,
   MessageSquare,
   MoreHorizontal,
   UserRound,
@@ -44,6 +45,7 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   mentioned: AtSign,
   commented: MessageSquare,
   state_changed: CircleDot,
+  monitoring: Activity,
 };
 
 const dropdownMenu = {
@@ -94,12 +96,19 @@ export default function InboxListItem({
       : `${n.projectKey}-${n.issueSeq} ${n.issueTitle}`;
   const who = n.actorName ?? te('someone');
   // The verb phrase for a notification, addressed to the reader ("you").
-  const eventText =
-    n.type === 'state_changed'
-      ? n.fromState && n.toState
-        ? te('stateChanged', { who, from: n.fromState, to: n.toState })
-        : te('stateChangedPlain', { who })
-      : te(n.type, { who });
+  let eventText = n.message;
+  if (!eventText) {
+    if (n.type === 'state_changed') {
+      eventText =
+        n.fromState && n.toState
+          ? te('stateChanged', { who, from: n.fromState, to: n.toState })
+          : te('stateChangedPlain', { who });
+    } else if (n.type === 'monitoring') {
+      eventText = 'Monitoring alert';
+    } else {
+      eventText = te(n.type, { who });
+    }
+  }
   const unread = n.readAt == null;
   const snoozed = n.snoozedUntil != null && new Date(n.snoozedUntil).getTime() > Date.now();
 

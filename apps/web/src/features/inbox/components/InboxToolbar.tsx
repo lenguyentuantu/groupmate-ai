@@ -16,7 +16,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const TYPES: NotificationType[] = ['assigned', 'mentioned', 'commented', 'state_changed'];
+const TYPES: NotificationType[] = [
+  'assigned',
+  'mentioned',
+  'commented',
+  'state_changed',
+  'monitoring',
+];
 
 // The inbox list header: title with unread count, a type filter, display toggles
 // (show read / snoozed), and the bulk-action menu.
@@ -69,7 +75,7 @@ export default function InboxToolbar({
                 onCheckedChange={() => toggleType(type)}
                 onSelect={(e) => e.preventDefault()}
               >
-                {t(`types.${type}`)}
+                {type === 'monitoring' ? 'Monitoring' : t(`types.${type}`)}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>

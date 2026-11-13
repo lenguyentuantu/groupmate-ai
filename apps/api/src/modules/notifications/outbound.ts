@@ -11,7 +11,7 @@ import {
   getProjectEmailConfig,
   type DeliveryPayload,
 } from '@repo/db';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { composeEmail, isAccountDeactivated, savedLocales } from '@repo/auth';
 import { DEFAULT_LOCALE, emailWords, type CoreEmailKey, type Locale } from '@repo/mailer';
 import { readRedactedSettings } from '#modules/notification-settings/service';
@@ -40,6 +40,7 @@ interface OutboxRow {
   channel: 'email' | 'telegram';
   recipient: string;
   payload: DeliveryPayload;
+  dedupeKey?: string | null;
 }
 
 // The issue reference shown in messages, e.g. "IAP-42".
@@ -68,6 +69,7 @@ const EMAIL_TEMPLATE: Record<NotificationType, CoreEmailKey> = {
   mentioned: 'mentioned',
   commented: 'commented',
   state_changed: 'stateChanged',
+  monitoring: 'stateChanged',
 };
 
 // Telegram copy. Rendered as HTML (parse_mode HTML) with the issue reference as a
@@ -91,6 +93,7 @@ function telegramPayload(
         ? `Status changed from ${stateChange.from} to ${stateChange.to} by ${actor}`
         : `Status changed by ${actor}`,
     },
+    monitoring: { emoji: '⚠️', action: 'Project monitoring alert' },
   };
   const { emoji, action } = meta[type];
 
@@ -132,7 +135,7 @@ interface Messages {
 // that is gone. A comment's event links to the comment.
 async function composeMessages(
   notifications: NewNotificationRow[],
-  projectRow: { key: string; teamId: number; teamSlug: string | null },
+  projectRow: { key: string; name: string; teamId: number; teamSlug: string | null },
   actorName: string | null,
   commentId: number | null,
 ): Promise<Messages | null> {
@@ -170,6 +173,25 @@ async function composeMessages(
     commentId != null
       ? commentUrl(ref, projectRow.key, issueRow.seq, commentId)
       : issueUrl(ref, projectRow.key, issueRow.seq);
+  if (first.type === 'monitoring') {
+    const monitoringMessage = first.message ?? 'Project monitoring alert.';
+    const message = `${projectRow.name}: ${monitoringMessage}`;
+    const link = url ? `\n\n${url}` : '';
+    const linkHtml = url ? `<p><a href="${escapeHtml(url)}">Open in GroupMate AI</a></p>` : '';
+    return {
+      email: async () => ({
+        subject: `Monitoring alert — ${projectRow.name}`,
+        text: `${message}${link}`,
+        html: `<p>${escapeHtml(message)}</p>${linkHtml}`,
+        url,
+      }),
+      telegram: () => ({
+        text: `${message}${link}`,
+        html: `<b>${escapeHtml(projectRow.name)}</b>\n\n${escapeHtml(monitoringMessage)}${url ? `\n\n<a href="${escapeHtml(url)}">Open in GroupMate AI</a>` : ''}`,
+        url,
+      }),
+    };
+  }
   // One issue event, so every 'state_changed' row points at the same activity row.
   const statusActivityId =
     notifications.find((n) => n.type === 'state_changed')?.sourceActivityId ?? null;
@@ -266,6 +288,7 @@ export async function enqueueOutbound(
         channel: 'email',
         recipient: email,
         payload: await emailFor(n.type, localeByUser.get(n.userId) ?? DEFAULT_LOCALE),
+        dedupeKey: n.dedupeKey,
       });
     }
     if (telegramEnabled && prefs.telegramEvents[n.type]) {
@@ -278,11 +301,23 @@ export async function enqueueOutbound(
           channel: 'telegram',
           recipient: chatId,
           payload: messages.telegram(n.type),
+          dedupeKey: n.dedupeKey,
         });
       }
     }
   }
 
   if (out.length === 0) return;
-  await db.insert(notificationDelivery).values(out);
+  await db
+    .insert(notificationDelivery)
+    .values(out)
+    .onConflictDoNothing({
+      target: [
+        notificationDelivery.projectId,
+        notificationDelivery.channel,
+        notificationDelivery.recipient,
+        notificationDelivery.dedupeKey,
+      ],
+      where: sql`${notificationDelivery.dedupeKey} IS NOT NULL`,
+    });
 }

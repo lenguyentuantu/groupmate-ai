@@ -18,6 +18,8 @@ import {
   updateSubtaskAutomation,
   updateEstimates,
   updateProjectSettings,
+  getMonitoringSettings,
+  updateMonitoringSettings,
 } from '@/lib/api/endpoints/settings';
 import {
   createColumn,
@@ -208,6 +210,22 @@ export function useUpdateEstimates(projectKey: string) {
   return useProjectMutation(projectKey, (input: EstimateSettings) =>
     updateEstimates(projectKey, input),
   );
+}
+
+export function useMonitoringSettingsQuery(projectKey: string) {
+  return useQuery({
+    queryKey: qk.monitoringSettings(projectKey),
+    queryFn: () => getMonitoringSettings(projectKey),
+  });
+}
+
+export function useUpdateMonitoringSettings(projectKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof updateMonitoringSettings>[1]) =>
+      updateMonitoringSettings(projectKey, input),
+    onSuccess: (data) => qc.setQueryData(qk.monitoringSettings(projectKey), data),
+  });
 }
 
 // Repository section: the inbound webhook connection and its pull request automations.

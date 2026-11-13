@@ -1,0 +1,2 @@
+ALTER TABLE "notification_delivery" ADD COLUMN "dedupe_key" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "notification_delivery_dedupe_idx" ON "notification_delivery" USING btree ("project_id","channel","recipient","dedupe_key") WHERE "notification_delivery"."dedupe_key" IS NOT NULL;

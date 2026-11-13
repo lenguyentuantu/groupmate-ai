@@ -1,6 +1,7 @@
 import { db, issue, issueLink, monitoringRun, project, projectColumn } from '@repo/db';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { persistMonitoringResult } from './persistence';
+import type { MonitoringScheduleSetting } from './scheduler';
 
 export type MonitoringRule =
   'UNASSIGNED' | 'MISSING_DEADLINE' | 'DUE_SOON' | 'OVERDUE' | 'BLOCKED_DEPENDENCY';
@@ -239,6 +240,63 @@ export async function runProjectMonitoring(
     counts: { newAlerts: number; ongoingAlerts: number; resolvedAlerts: number };
   }
 > {
+  const completed = await runMonitoringTransaction(projectId, now);
+  if (!completed) throw new Error('Monitoring evaluation did not complete');
+  return completed;
+}
+
+export async function runScheduledProjectMonitoring(
+  projectId: number,
+  now: Date,
+  schedule: MonitoringScheduleSetting,
+): Promise<
+  | (MonitoringResult & {
+      counts: { newAlerts: number; ongoingAlerts: number; resolvedAlerts: number };
+    })
+  | null
+> {
+  return runMonitoringTransaction(
+    projectId,
+    now,
+    (latestRunAt) => {
+      if (!schedule.enabled) return false;
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: schedule.timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        weekday: 'short',
+        hourCycle: 'h23',
+      }).formatToParts(now);
+      const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+      if (Number(values.hour) < schedule.hour) return false;
+      if (schedule.frequency === 'weekdays' && ['Sat', 'Sun'].includes(values.weekday))
+        return false;
+      if (!latestRunAt) return true;
+      const latestParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: schedule.timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(latestRunAt);
+      const latestValues = Object.fromEntries(latestParts.map((part) => [part.type, part.value]));
+      return (
+        latestValues.year !== values.year ||
+        latestValues.month !== values.month ||
+        latestValues.day !== values.day
+      );
+    },
+    false,
+  );
+}
+
+async function runMonitoringTransaction(
+  projectId: number,
+  now: Date,
+  shouldRun: ((latestRunAt: Date | null) => boolean) | undefined = undefined,
+  throwWhenSkipped = true,
+) {
   let evaluationError: unknown;
   const completed = await db.transaction(async (tx) => {
     await tx
@@ -246,6 +304,15 @@ export async function runProjectMonitoring(
       .from(project)
       .where(eq(project.id, projectId))
       .for('update');
+    if (shouldRun) {
+      const [latestRun] = await tx
+        .select({ evaluatedAt: monitoringRun.evaluatedAt })
+        .from(monitoringRun)
+        .where(and(eq(monitoringRun.projectId, projectId), eq(monitoringRun.status, 'succeeded')))
+        .orderBy(desc(monitoringRun.evaluatedAt))
+        .limit(1);
+      if (!shouldRun(latestRun?.evaluatedAt ?? null)) return null;
+    }
     let result: MonitoringResult;
     try {
       result = await getProjectMonitoring(projectId, now);
@@ -263,6 +330,6 @@ export async function runProjectMonitoring(
     return { ...result, counts };
   });
   if (evaluationError) throw evaluationError;
-  if (!completed) throw new Error('Monitoring evaluation did not complete');
+  if (!completed && throwWhenSkipped) throw new Error('Monitoring evaluation did not complete');
   return completed;
 }

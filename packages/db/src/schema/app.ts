@@ -1312,6 +1312,7 @@ export const notificationDelivery = pgTable(
       .references(() => project.id, { onDelete: 'cascade' }),
     channel: text('channel').notNull(),
     recipient: text('recipient'),
+    dedupeKey: text('dedupe_key'),
     payload: jsonb('payload').$type<DeliveryPayload>().notNull(),
     status: text('status').notNull().default('pending'),
     attempts: integer('attempts').notNull().default(0),
@@ -1325,6 +1326,9 @@ export const notificationDelivery = pgTable(
     index('notification_delivery_due_idx')
       .on(t.nextAttemptAt)
       .where(sql`${t.status} = 'pending'`),
+    uniqueIndex('notification_delivery_dedupe_idx')
+      .on(t.projectId, t.channel, t.recipient, t.dedupeKey)
+      .where(sql`${t.dedupeKey} IS NOT NULL`),
   ],
 );
 
@@ -2713,6 +2717,8 @@ export const notification = pgTable(
       onDelete: 'set null',
     }),
     actorName: text('actor_name'),
+    message: text('message'),
+    dedupeKey: text('dedupe_key'),
     readAt: timestamp('read_at', { withTimezone: true }),
     snoozedUntil: timestamp('snoozed_until', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -2720,7 +2726,7 @@ export const notification = pgTable(
   (t) => [
     check(
       'notification_type_check',
-      sql`${t.type} IN ('assigned', 'mentioned', 'commented', 'state_changed')`,
+      sql`${t.type} IN ('assigned', 'mentioned', 'commented', 'state_changed', 'monitoring')`,
     ),
     check('notification_target_check', sql`(${t.issueId} IS NULL) <> (${t.documentId} IS NULL)`),
     // Backs the inbox list: a user's notifications newest first.
@@ -2736,6 +2742,9 @@ export const notification = pgTable(
     index('notification_source_activity_idx')
       .on(t.sourceActivityId)
       .where(sql`${t.sourceActivityId} IS NOT NULL`),
+    uniqueIndex('notification_dedupe_idx')
+      .on(t.userId, t.projectId, t.type, t.dedupeKey)
+      .where(sql`${t.dedupeKey} IS NOT NULL`),
   ],
 );
 

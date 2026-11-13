@@ -48,6 +48,28 @@ export interface ProjectSettings {
   features: ProjectFeatures;
 }
 
+export interface MonitoringSettings {
+  enabled: boolean;
+  frequency: 'daily' | 'weekdays';
+  hour: number;
+  minute: number;
+  timeZone: 'Asia/Ho_Chi_Minh';
+  lastRunAt: string | null;
+  lastRunStatus: string | null;
+}
+
+export const getMonitoringSettings = (projectKey: string) =>
+  request<MonitoringSettings>(`/projects/${projectKey}/settings/monitoring`);
+
+export const updateMonitoringSettings = (
+  projectKey: string,
+  input: Pick<MonitoringSettings, 'enabled' | 'frequency' | 'hour' | 'minute' | 'timeZone'>,
+) =>
+  request<MonitoringSettings>(`/projects/${projectKey}/settings/monitoring`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+
 export interface StorageSettings {
   maxAttachmentMb: number;
   maxAvatarMb: number;

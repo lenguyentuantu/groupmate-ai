@@ -26,7 +26,13 @@ import { enqueueOutbound } from './outbound';
 // notified about their own action, and only project members receive notifications,
 // so agent bot users (assigned via delegate, not members) are excluded.
 
-export const NOTIFICATION_TYPES = ['assigned', 'mentioned', 'commented', 'state_changed'] as const;
+export const NOTIFICATION_TYPES = [
+  'assigned',
+  'mentioned',
+  'commented',
+  'state_changed',
+  'monitoring',
+] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
 // Points at an issue, or at a document: then documentId is set and issueId is null.
@@ -39,6 +45,8 @@ export interface NewNotificationRow {
   documentCommentId?: string | null;
   type: NotificationType;
   actorUserId: string | null;
+  message?: string | null;
+  dedupeKey?: string | null;
 }
 
 // Keeps only the ids that are members of the project. Filters out non-members (an
@@ -271,6 +279,7 @@ export interface NotificationRow {
   type: NotificationType;
   actorUserId: string | null;
   actorName: string | null;
+  message: string | null;
   readAt: string | null;
   snoozedUntil: string | null;
   createdAt: string;
@@ -327,6 +336,7 @@ function mapRow(r: {
   type: string;
   actorUserId: string | null;
   actorName: string | null;
+  message: string | null;
   readAt: Date | null;
   snoozedUntil: Date | null;
   createdAt: Date;
@@ -351,6 +361,7 @@ function mapRow(r: {
     type: r.type as NotificationType,
     actorUserId: r.actorUserId,
     actorName: r.actorName,
+    message: r.message,
     readAt: r.readAt ? iso(r.readAt) : null,
     snoozedUntil: r.snoozedUntil ? iso(r.snoozedUntil) : null,
     createdAt: iso(r.createdAt),
@@ -408,6 +419,7 @@ export async function listNotifications(
       type: notification.type,
       actorUserId: notification.actorUserId,
       actorName: notification.actorName,
+      message: notification.message,
       readAt: notification.readAt,
       snoozedUntil: notification.snoozedUntil,
       createdAt: notification.createdAt,

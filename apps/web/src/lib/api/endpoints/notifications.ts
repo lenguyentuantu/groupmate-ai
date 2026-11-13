@@ -3,7 +3,8 @@ import type { StateType } from '@/lib/api/endpoints/columns';
 
 // Inbox notifications. Each row is enriched with the issue or the document and the
 // project it points at, so the list renders without extra calls.
-export type NotificationType = 'assigned' | 'mentioned' | 'commented' | 'state_changed';
+export type NotificationType =
+  'assigned' | 'mentioned' | 'commented' | 'state_changed' | 'monitoring';
 
 // The issue fields are set on an issue's notification, the document fields on a
 // document's.
@@ -12,6 +13,7 @@ export interface Notification {
   type: NotificationType;
   actorUserId: string | null;
   actorName: string | null;
+  message: string | null;
   readAt: string | null;
   snoozedUntil: string | null;
   createdAt: string;
