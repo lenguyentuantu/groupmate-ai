@@ -97,11 +97,9 @@ export const BoardCard = memo(function BoardCard({
         className={cn(
           // select-none so a Shift/Cmd-click toggles selection without the browser
           // also starting a native text selection across cards.
-          'kanban-card cursor-grab rounded-md p-2 select-none',
+          'kanban-card cursor-grab rounded-lg border border-border/55 p-3 shadow-xs transition-[background-color,border-color,box-shadow,transform] select-none hover:-translate-y-px hover:border-primary/25 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
           isDragging && 'opacity-40',
           blocked && 'kanban-card-blocked',
-          // Selected cards read as a primary-tinted fill, like Linear — no border,
-          // no checkbox (see .kanban-card-selected in globals.css).
           selected && 'kanban-card-selected',
         )}
       >

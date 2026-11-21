@@ -1,5 +1,5 @@
 {
-  "description": "A self-hosted, open-source issue tracker with AI agents built in. Assign work to people or agents, and drive it through the API, webhooks and MCP.",
+  "description": "Nền tảng quản lý dự án và cộng tác nhóm tích hợp AI, hỗ trợ lập kế hoạch, phân công và theo dõi công việc.",
   "screens": {
     "signIn": "Sign in",
     "signUp": "Sign up",

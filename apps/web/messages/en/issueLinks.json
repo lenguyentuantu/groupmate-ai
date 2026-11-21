@@ -1,16 +1,16 @@
 {
   "relations": {
-    "blocked_by": "Blocked by",
-    "blocks": "Blocks",
-    "duplicates": "Duplicates",
-    "duplicated_by": "Duplicated by",
-    "relates": "Related"
+    "blocked_by": "Công việc cần hoàn thành trước",
+    "blocks": "Công việc phụ thuộc vào việc này",
+    "duplicates": "Trùng với",
+    "duplicated_by": "Bị trùng bởi",
+    "relates": "Có liên quan"
   },
   "phrases": {
-    "blocked_by": "blocked by",
-    "blocks": "blocking",
-    "duplicates": "a duplicate of",
-    "duplicated_by": "duplicated by",
-    "relates": "related to"
+    "blocked_by": "bị chặn bởi",
+    "blocks": "đang chặn",
+    "duplicates": "trùng với",
+    "duplicated_by": "bị trùng bởi",
+    "relates": "liên quan đến"
   }
 }

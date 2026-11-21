@@ -164,6 +164,7 @@ export const app = new Elysia()
           },
           { name: 'Cycles', description: 'Cycles (time-boxed periods of work) and their issues' },
           { name: 'Attachments', description: 'Issue attachments and raw bytes' },
+          { name: 'Deliverables', description: 'Work item submissions and AI review' },
           {
             name: 'Chat attachments',
             description: 'Files uploaded in an agent chat and their raw bytes',

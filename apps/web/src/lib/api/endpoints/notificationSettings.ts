@@ -10,6 +10,9 @@ export interface NotificationEventToggles {
   mentioned: boolean;
   commented: boolean;
   state_changed: boolean;
+  ready: boolean;
+  reminder: boolean;
+  escalation: boolean;
   monitoring: boolean;
 }
 

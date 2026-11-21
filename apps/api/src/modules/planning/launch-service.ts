@@ -34,6 +34,10 @@ import {
   type LaunchMember,
 } from './launch';
 import { planSchema, type PlanSource } from './validation';
+import {
+  notifyPublishedAssignments,
+  reconcileProjectReadiness,
+} from '#modules/notifications/lifecycle';
 
 async function launchMembers(executor: DbExecutor, projectId: number): Promise<LaunchMember[]> {
   const [members, workloads] = await Promise.all([
@@ -388,12 +392,21 @@ const approvalStore: ApprovalStore = {
 };
 
 export async function publishLaunch(command: ApprovalCommand) {
+  let receipt: ApprovalReceipt;
   try {
-    return await approveAndPublish(approvalStore, command);
+    receipt = await approveAndPublish(approvalStore, command);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError(500, 'Launch materialization failed.', 'P4_MATERIALIZATION_FAILED');
   }
+  try {
+    const issueIds = receipt.workItemMappings.map((item) => item.workItemId);
+    await notifyPublishedAssignments(command.projectId, issueIds, command.actorUserId, receipt.id);
+    await reconcileProjectReadiness(command.projectId, { notifyReady: false });
+  } catch (error) {
+    console.error('[planning] launch notifications failed:', error);
+  }
+  return receipt;
 }
 
 export async function getLaunchReceipt(projectId: number, draftId: number) {

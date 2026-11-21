@@ -1,124 +1,125 @@
 {
-  "newIssue": "New issue",
-  "pin": "Pin",
-  "unpin": "Unpin",
-  "collapse": "Collapse",
-  "expand": "Expand",
-  "hide": "Hide",
-  "show": "Show",
-  "hiddenColumns": "Hidden columns",
-  "hiddenGroups": "Hidden groups",
-  "selectAll": "Select all",
-  "deselectAll": "Deselect all",
-  "resizeColumn": "Resize the column",
-  "viewNamePlaceholder": "All issues",
-  "sortedOrder": "Issues are ordered by {field}. Switch ordering to Manual to move them.",
-  "statusSince": "In current status since {date}",
-  "createdOn": "Created {date}",
-  "updatedOn": "Updated {date}",
-  "subtasksProgress": "Subtasks {done}/{total}",
-  "subtasksDone": "{done} of {total} subtasks done",
+  "newIssue": "Tạo công việc",
+  "pin": "Ghim",
+  "unpin": "Bỏ ghim",
+  "collapse": "Thu gọn",
+  "expand": "Mở rộng",
+  "hide": "Ẩn",
+  "show": "Hiện",
+  "hiddenColumns": "Cột đang ẩn",
+  "hiddenGroups": "Nhóm đang ẩn",
+  "selectAll": "Chọn tất cả",
+  "deselectAll": "Bỏ chọn tất cả",
+  "resizeColumn": "Thay đổi độ rộng cột",
+  "viewNamePlaceholder": "Tất cả công việc",
+  "sortedOrder": "Công việc đang được sắp xếp theo {field}. Chuyển sang sắp xếp thủ công để di chuyển.",
+  "statusSince": "Ở trạng thái hiện tại từ {date}",
+  "createdOn": "Đã tạo {date}",
+  "updatedOn": "Đã cập nhật {date}",
+  "subtasksProgress": "Công việc con {done}/{total}",
+  "subtasksDone": "Đã hoàn tất {done}/{total} công việc con",
+  "emptyColumn": "Chưa có công việc trong trạng thái này.",
   "wip": {
-    "reached": "{column} is at its limit of {limit} issues.",
-    "tooltip": "Work-in-progress limit: {max}",
+    "reached": "{column} đã đạt giới hạn {limit} công việc.",
+    "tooltip": "Giới hạn công việc đang thực hiện: {max}",
     "count": "{count} / {max}",
-    "filteredCount": "{shown} of {total} / {max}",
-    "filteredTooltip": "{shown} shown by the current filters. The limit of {max} counts all {total} issues in the column."
+    "filteredCount": "{shown} trong {total} / {max}",
+    "filteredTooltip": "Bộ lọc hiện tại hiển thị {shown}. Giới hạn {max} tính cả {total} công việc trong cột."
   },
   "columns": {
-    "title": "Title",
-    "status": "State",
-    "statusAge": "In status",
-    "priority": "Priority",
-    "type": "Type",
-    "initiative": "Initiative",
-    "cycle": "Cycle",
-    "labels": "Labels",
-    "estimatePoints": "Story points",
-    "estimateTime": "Time",
-    "startDate": "Start",
-    "dueDate": "Due",
-    "created": "Created",
-    "updated": "Updated"
+    "title": "Tiêu đề",
+    "status": "Trạng thái",
+    "statusAge": "Thời gian ở trạng thái",
+    "priority": "Ưu tiên",
+    "type": "Loại",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "estimatePoints": "Điểm công việc",
+    "estimateTime": "Thời gian",
+    "startDate": "Bắt đầu",
+    "dueDate": "Hạn hoàn thành",
+    "created": "Ngày tạo",
+    "updated": "Ngày cập nhật"
   },
   "calendar": {
-    "previousMonth": "Previous month",
-    "nextMonth": "Next month",
-    "today": "Today",
-    "moreIssues": "+{count} more",
-    "issueCount": "{count, plural, one {# issue} other {# issues}}",
+    "previousMonth": "Tháng trước",
+    "nextMonth": "Tháng sau",
+    "today": "Hôm nay",
+    "moreIssues": "+{count} công việc",
+    "issueCount": "{count, plural, one {# công việc} other {# công việc}}",
     "weekdays": {
-      "sun": "Sun",
-      "mon": "Mon",
-      "tue": "Tue",
-      "wed": "Wed",
-      "thu": "Thu",
-      "fri": "Fri",
-      "sat": "Sat"
+      "sun": "CN",
+      "mon": "T2",
+      "tue": "T3",
+      "wed": "T4",
+      "thu": "T5",
+      "fri": "T6",
+      "sat": "T7"
     },
     "noDate": {
-      "dueDate": "No due date",
-      "startDate": "No start date",
-      "custom": "No date"
+      "dueDate": "Chưa có hạn hoàn thành",
+      "startDate": "Chưa có ngày bắt đầu",
+      "custom": "Chưa có ngày"
     },
     "allDated": {
-      "dueDate": "Everything has a due date.",
-      "startDate": "Everything has a start date.",
-      "custom": "Everything has a date."
+      "dueDate": "Tất cả công việc đều có hạn hoàn thành.",
+      "startDate": "Tất cả công việc đều có ngày bắt đầu.",
+      "custom": "Tất cả công việc đều có ngày."
     }
   },
   "empty": {
-    "title": "No issues",
-    "description": "Issues will show up here.",
-    "filteredTitle": "No matching issues",
-    "filteredDescription": "Change the filters to see more."
+    "title": "Chưa có công việc",
+    "description": "Công việc sẽ xuất hiện tại đây.",
+    "filteredTitle": "Không có công việc phù hợp",
+    "filteredDescription": "Thay đổi bộ lọc để xem thêm."
   },
   "timeline": {
-    "expandGroup": "Expand group",
-    "collapseGroup": "Collapse group",
-    "inferredStart": "Start inferred from the created date",
-    "inferredStartDraggable": "Start inferred from the created date — drag to set it"
+    "expandGroup": "Mở rộng nhóm",
+    "collapseGroup": "Thu gọn nhóm",
+    "inferredStart": "Ngày bắt đầu được suy ra từ ngày tạo",
+    "inferredStartDraggable": "Ngày bắt đầu được suy ra từ ngày tạo — kéo để thiết lập"
   },
   "bulk": {
-    "selected": "{count} selected",
-    "status": "Status",
-    "priority": "Priority",
-    "assignee": "Assignee",
-    "delegate": "Delegate",
-    "initiative": "Initiative",
-    "cycle": "Cycle",
-    "labels": "Labels",
-    "noAssignee": "No assignee",
-    "noDelegate": "No delegate",
-    "noInitiative": "No initiative",
-    "noCycle": "No cycle",
-    "archive": "Archive",
-    "clearSelection": "Clear selection"
+    "selected": "Đã chọn {count}",
+    "status": "Trạng thái",
+    "priority": "Ưu tiên",
+    "assignee": "Người phụ trách",
+    "delegate": "Người được ủy quyền",
+    "initiative": "Sáng kiến",
+    "cycle": "Chu kỳ",
+    "labels": "Nhãn",
+    "noAssignee": "Chưa có người phụ trách",
+    "noDelegate": "Chưa có người được ủy quyền",
+    "noInitiative": "Chưa có sáng kiến",
+    "noCycle": "Chưa có chu kỳ",
+    "archive": "Lưu trữ",
+    "clearSelection": "Bỏ chọn"
   },
   "removal": {
     "archive": {
-      "title": "{count, plural, one {Archive issue} other {Archive issues}}",
-      "confirm": "{count, plural, one {Archive # issue} other {Archive # issues}}",
-      "description": "{count, plural, one {Archive # selected issue? It leaves the board and can be restored later.} other {Archive # selected issues? They leave the board and can be restored later.}}"
+      "title": "{count, plural, one {Lưu trữ công việc} other {Lưu trữ công việc}}",
+      "confirm": "{count, plural, one {Lưu trữ # công việc} other {Lưu trữ # công việc}}",
+      "description": "{count, plural, one {Lưu trữ # công việc đã chọn? Công việc sẽ rời bảng và có thể được khôi phục sau.} other {Lưu trữ # công việc đã chọn? Các công việc sẽ rời bảng và có thể được khôi phục sau.}}"
     },
     "delete": {
-      "title": "{count, plural, one {Delete issue} other {Delete issues}}",
-      "confirm": "{count, plural, one {Delete # issue} other {Delete # issues}}",
-      "description": "{count, plural, one {Delete # selected issue?} other {Delete # selected issues?}} This also removes comments, activity and attachments. This cannot be undone."
+      "title": "{count, plural, one {Xóa công việc} other {Xóa công việc}}",
+      "confirm": "{count, plural, one {Xóa # công việc} other {Xóa # công việc}}",
+      "description": "{count, plural, one {Xóa # công việc đã chọn?} other {Xóa # công việc đã chọn?}} Bình luận, hoạt động và tệp đính kèm cũng sẽ bị xóa. Không thể hoàn tác."
     }
   },
   "share": {
-    "issueTitle": "Issue",
-    "issueUnavailable": "This issue is not available.",
-    "boardUnavailable": "This shared board is not available. The link may have been revoked or may have expired."
+    "issueTitle": "Công việc",
+    "issueUnavailable": "Công việc không khả dụng.",
+    "boardUnavailable": "Bảng được chia sẻ không khả dụng. Liên kết có thể đã bị thu hồi hoặc hết hạn."
   },
   "groups": {
-    "noAssignee": "No assignee",
-    "noDelegate": "No delegate",
-    "noPriority": "No priority",
-    "noType": "No type",
-    "noInitiative": "No initiative",
-    "noCycle": "No cycle",
-    "noMember": "No value"
+    "noAssignee": "Chưa có người phụ trách",
+    "noDelegate": "Chưa có người được ủy quyền",
+    "noPriority": "Chưa có độ ưu tiên",
+    "noType": "Chưa có loại",
+    "noInitiative": "Chưa có sáng kiến",
+    "noCycle": "Chưa có chu kỳ",
+    "noMember": "Chưa có giá trị"
   }
 }

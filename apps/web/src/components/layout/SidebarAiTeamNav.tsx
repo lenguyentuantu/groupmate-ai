@@ -1,7 +1,7 @@
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { aiAgentsPath, aiTeamPath } from '@/utils/paths';
-import { AI_AGENTS_SECTION, aiTeamEntries, type AiTeamEntry } from '@/utils/settingsSections';
+import { AI_AGENTS_SECTION } from '@/utils/settingsSections';
 import { useAiTeamSections } from '@/hooks/useSettingsNavGroups';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useShellRoute } from '@/hooks/useShellRoute';
@@ -13,10 +13,11 @@ import {
   SidebarMenu,
 } from '@/components/ui/sidebar';
 import SidebarNavItem from '@/components/layout/SidebarNavItem';
-import SidebarNavSubmenu from '@/components/layout/SidebarNavSubmenu';
+import SidebarNavSubmenu, {
+  type SidebarNavSubmenuItem,
+} from '@/components/layout/SidebarNavSubmenu';
 
-// The AI Team sidebar group: the AI Team sections the viewer may read, then the
-// agents of the project, then their runs. Renders nothing when none of them are readable.
+// The AI Team sidebar group consolidates the readable AI routes into one menu.
 export default function SidebarAiTeamNav({ projectKey }: { projectKey: string | null }) {
   const t = useTranslations('nav');
   const sectionText = useSettingsSectionText();
@@ -31,56 +32,52 @@ export default function SidebarAiTeamNav({ projectKey }: { projectKey: string | 
   );
   const showAgents = can(AI_AGENTS_SECTION.resource, 'read');
   if (sections.length === 0 && !showAgents) return null;
-  const href = (slug: string) => (projectKey ? aiTeamPath(projectKey, slug) : '#');
-  const sectionItem = (s: (typeof sections)[number]) => (
-    <SidebarNavItem
-      key={s.slug}
-      href={href(s.slug)}
-      icon={s.icon}
-      label={sectionText(s.slug).label}
-      active={aiTeamSection === s.slug}
-      disabled={disabled}
-    />
-  );
   const listed = sections.filter((s) => s.slug !== 'queue');
-  // A menu opens to links, so with no project to link to each section is an item of its own.
-  const entries: AiTeamEntry[] = projectKey
-    ? aiTeamEntries(listed)
-    : listed.map((section) => ({ section }));
-  const entryItem = (entry: AiTeamEntry) =>
-    'section' in entry ? (
-      sectionItem(entry.section)
-    ) : (
-      <SidebarNavSubmenu
-        key={`menu:${entry.menu}`}
-        icon={entry.sections[0]!.icon}
-        label={sectionText(entry.menu).label}
-        items={entry.sections.map((s) => ({
-          key: s.slug,
-          href: href(s.slug),
-          icon: s.icon,
-          label: sectionText(s.slug).label,
-          active: aiTeamSection === s.slug,
-        }))}
-      />
-    );
+  const queue = sections.filter((s) => s.slug === 'queue');
+  const items: SidebarNavSubmenuItem[] = listed.map((section) => ({
+    key: section.slug,
+    href: projectKey ? aiTeamPath(projectKey, section.slug) : '#',
+    icon: section.icon,
+    label: sectionText(section.slug).label,
+    active: aiTeamSection === section.slug,
+  }));
+
+  if (showAgents) {
+    items.push({
+      key: AI_AGENTS_SECTION.slug,
+      href: projectKey ? aiAgentsPath(projectKey) : '#',
+      icon: AI_AGENTS_SECTION.icon,
+      label: sectionText(AI_AGENTS_SECTION.slug).label,
+      active: pathname.endsWith('/agents'),
+    });
+  }
+
+  items.push(
+    ...queue.map((section) => ({
+      key: section.slug,
+      href: projectKey ? aiTeamPath(projectKey, section.slug) : '#',
+      icon: section.icon,
+      label: sectionText(section.slug).label,
+      active: aiTeamSection === section.slug,
+    })),
+  );
 
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{t('aiTeam')}</SidebarGroupLabel>
       <SidebarGroupContent>
         <SidebarMenu>
-          {entries.map(entryItem)}
-          {showAgents && (
+          {projectKey ? (
+            <SidebarNavSubmenu icon={AI_AGENTS_SECTION.icon} label={t('aiAgents')} items={items} />
+          ) : (
             <SidebarNavItem
-              href={projectKey ? aiAgentsPath(projectKey) : '#'}
+              href="#"
               icon={AI_AGENTS_SECTION.icon}
-              label={sectionText(AI_AGENTS_SECTION.slug).label}
-              active={pathname.endsWith('/agents')}
+              label={t('aiAgents')}
+              active={false}
               disabled={disabled}
             />
           )}
-          {sections.filter((s) => s.slug === 'queue').map(sectionItem)}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

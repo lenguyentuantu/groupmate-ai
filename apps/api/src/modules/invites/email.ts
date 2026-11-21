@@ -1,11 +1,19 @@
 import { randomUUID } from 'node:crypto';
-import { db, notificationDelivery, getInstanceEmailConfig, team } from '@repo/db';
+import {
+  db,
+  emailSource,
+  getDeliveryConfig,
+  getInstanceEmailConfig,
+  notificationDelivery,
+  team,
+} from '@repo/db';
 import { composeEmail, savedLocaleOf, trustedOrigins } from '@repo/auth';
 import {
   DEFAULT_LOCALE,
   emailWords,
   hasEmailProvider,
   sendEmail,
+  type EmailConfig,
   type EmailWords,
   type Locale,
 } from '@repo/mailer';
@@ -15,6 +23,29 @@ import type { InviteRow } from './service';
 interface InviteProject {
   id: number;
   name: string;
+  teamId: number;
+}
+
+async function inviteEmailProvider(
+  teamId: number,
+): Promise<{ config: EmailConfig; source: 'project' | 'instance' } | null> {
+  const teamConfig = await getDeliveryConfig(teamId);
+  const source = emailSource(teamConfig);
+  if (source === 'smtp' || source === 'resend') {
+    const config: EmailConfig = {
+      smtp: teamConfig.smtp,
+      resend: teamConfig.resend,
+      from: teamConfig.from,
+    };
+    return hasEmailProvider(config) ? { config, source: 'project' } : null;
+  }
+  if (source !== 'system') return null;
+  const config = await getInstanceEmailConfig();
+  return config && hasEmailProvider(config) ? { config, source: 'instance' } : null;
+}
+
+export async function hasInviteEmailProvider(teamId: number): Promise<boolean> {
+  return (await inviteEmailProvider(teamId)) !== null;
 }
 
 async function inviteLocale(invite: InviteRow): Promise<Locale> {
@@ -37,8 +68,8 @@ export async function enqueueInviteEmail(
   project: InviteProject,
   invite: InviteRow,
 ): Promise<boolean> {
-  const config = await getInstanceEmailConfig();
-  if (!config || !hasEmailProvider(config)) return false;
+  const provider = await inviteEmailProvider(project.teamId);
+  if (!provider) return false;
 
   const dedupeKey = `project-invite:${invite.id}`;
   const locale = await inviteLocale(invite);
@@ -81,7 +112,7 @@ export async function enqueueInviteEmail(
       payload: {
         ...email,
         url,
-        emailSource: 'instance',
+        emailSource: provider.source,
         idempotencyKey: `project-invite/${invite.id}/${randomUUID()}`,
         dedupeKey,
         projectInviteId: invite.id,
@@ -95,8 +126,8 @@ export async function enqueueInviteEmail(
 // cannot be queued there. It is sent at once instead, as the sign-in emails are:
 // best effort, without the outbox's retries. A failure leaves the link to be copied.
 export async function sendTeamInviteEmail(teamId: number, invite: InviteRow): Promise<boolean> {
-  const config = await getInstanceEmailConfig();
-  if (!config || !hasEmailProvider(config)) return false;
+  const provider = await inviteEmailProvider(teamId);
+  if (!provider) return false;
 
   const [row] = await db.select({ name: team.name }).from(team).where(eq(team.id, teamId));
   const locale = await inviteLocale(invite);
@@ -111,7 +142,7 @@ export async function sendTeamInviteEmail(teamId: number, invite: InviteRow): Pr
     },
     `${trustedOrigins[0]}/invite/${invite.token}`,
   );
-  const result = await sendEmail(config, { to: invite.email, ...email });
-  if (!result.ok) console.error('[invites] team invite email failed:', result.error);
+  const result = await sendEmail(provider.config, { to: invite.email, ...email });
+  if (!result.ok) console.error('[invites] team invite email failed');
   return result.ok;
 }

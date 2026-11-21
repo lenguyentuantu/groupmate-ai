@@ -5,6 +5,7 @@ import { HttpError } from '#shared/lib';
 import { recordActivityEntries, rowSide, textSide, type ActivityInput } from './activity';
 import { emitIssueEvents } from './webhook-payload';
 import { getIssues } from './service';
+import { reconcileProjectReadiness } from '#modules/notifications/lifecycle';
 
 // Relations between issues of one project. A relation is one row (issue_link);
 // which side of it an issue sits on decides how the relation reads for that
@@ -284,6 +285,7 @@ export async function addIssueLink(
     () => getIssues([issueId, targetIssueId]),
     actorUserId,
   );
+  await reconcileProjectReadiness(target.projectId, { notifyReady: true });
 
   return {
     id: linkId,
@@ -373,5 +375,6 @@ export async function removeIssueLink(
     () => getIssues(removed.issueIds),
     actorUserId,
   );
+  await reconcileProjectReadiness(removed.projectId, { notifyReady: true });
   return true;
 }

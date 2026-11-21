@@ -19,7 +19,9 @@ import {
   updateEstimates,
   updateProjectSettings,
   getMonitoringSettings,
+  getTaskLifecycleSettings,
   updateMonitoringSettings,
+  updateTaskLifecycleSettings,
 } from '@/lib/api/endpoints/settings';
 import {
   createColumn,
@@ -225,6 +227,22 @@ export function useUpdateMonitoringSettings(projectKey: string) {
     mutationFn: (input: Parameters<typeof updateMonitoringSettings>[1]) =>
       updateMonitoringSettings(projectKey, input),
     onSuccess: (data) => qc.setQueryData(qk.monitoringSettings(projectKey), data),
+  });
+}
+
+export function useTaskLifecycleSettingsQuery(projectKey: string) {
+  return useQuery({
+    queryKey: qk.taskLifecycleSettings(projectKey),
+    queryFn: () => getTaskLifecycleSettings(projectKey),
+  });
+}
+
+export function useUpdateTaskLifecycleSettings(projectKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Parameters<typeof updateTaskLifecycleSettings>[1]) =>
+      updateTaskLifecycleSettings(projectKey, input),
+    onSuccess: (data) => qc.setQueryData(qk.taskLifecycleSettings(projectKey), data),
   });
 }
 

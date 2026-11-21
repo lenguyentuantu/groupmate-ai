@@ -10,6 +10,7 @@ import { useLiveRefresh } from '@/hooks/useLiveRefresh';
 import { revScope } from '@/utils/revScopes';
 import { qk } from '@/services/queryKeys';
 import { buildGroups, groupIssues } from '@/utils/project';
+import { isActiveFilterSet } from '@/utils/filters';
 import { countIssuesByColumn } from './utils/wipLimit';
 import {
   restoreHiddenSections,
@@ -53,6 +54,7 @@ export default function WorkItemsPage() {
     scope: '',
     groups: new Set(),
   });
+  const [simpleKanban, setSimpleKanban] = useState(true);
 
   // Live board: refetch the issues when anything on the board changes, so another
   // user's create/move/edit shows without a manual reload.
@@ -162,7 +164,25 @@ export default function WorkItemsPage() {
       case 'calendar':
         return <CalendarView {...viewProps} />;
       default:
-        return <KanbanBoard {...viewProps} />;
+        return (
+          <KanbanBoard
+            {...viewProps}
+            simpleStatusBoard={
+              simpleKanban &&
+              !editor.activeView &&
+              settings.group === 'status' &&
+              settings.subgroup === 'none' &&
+              !isActiveFilterSet(editor.effectiveFilters)
+            }
+            showSimpleStatusToggle={
+              !editor.activeView &&
+              settings.group === 'status' &&
+              settings.subgroup === 'none' &&
+              !isActiveFilterSet(editor.effectiveFilters)
+            }
+            onSimpleStatusBoardChange={setSimpleKanban}
+          />
+        );
     }
   }
 

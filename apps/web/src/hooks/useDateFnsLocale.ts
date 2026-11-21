@@ -3,6 +3,7 @@
 import { useLocale } from 'next-intl';
 import {
   enUS,
+  vi,
   uk,
   ru,
   zhCN,
@@ -22,7 +23,7 @@ import {
 // format dates themselves instead of going through next-intl (the calendar's
 // month and weekday names).
 const LOCALES: Record<string, DateFnsLocale> = {
-  en: enUS,
+  en: vi,
   uk,
   ru,
   'zh-CN': zhCN,

@@ -27,6 +27,7 @@ import { errorMessage } from '../helpers/errors';
 import { projectPreamble } from '../prompt/framing';
 import { HttpError } from '#shared/lib';
 import type { AgentRunTrigger } from '../../model';
+import { getProjectAiConfig } from '@repo/db';
 
 // Runtime execution of internal agents via Mastra. An agent is built on demand
 // from its stored configuration (provider/model/instructions) and run against a
@@ -47,7 +48,7 @@ const DEFAULT_MAX_STEPS = 12;
 
 // Mastra's model config: an object carrying the provider id, model id, and the
 // explicit apiKey (and url for OpenAI-compatible endpoints).
-type ModelConfig = {
+export type ModelConfig = {
   providerId: string;
   modelId: string;
   apiKey: string;
@@ -55,13 +56,23 @@ type ModelConfig = {
   headers?: Record<string, string>;
 };
 
+export async function resolvePlatformModel(): Promise<ModelConfig> {
+  const config = await getProjectAiConfig();
+  if (!config) throw new HttpError(503, 'Built-in AI is unavailable');
+  return {
+    providerId: config.providerId,
+    modelId: config.model,
+    apiKey: config.apiKey,
+  };
+}
+
 // Builds the model config for an agent from its model credential. The credential's
 // integration key is the provider id; its decrypted config carries the apiKey and an
 // optional base URL. The model id is stored on the agent. OpenCode Go rejects a request
 // without an x-opencode-session header, which has to stay the same across one conversation.
 export async function resolveModel(row: AiAgentRow, sessionId: string): Promise<ModelConfig> {
   if (row.modelCredentialId == null) {
-    throw new HttpError(400, 'Agent has no model credential set');
+    return resolvePlatformModel();
   }
   const secret = await getCredentialSecret(row.modelCredentialId, row.teamId);
   if (!secret) throw new HttpError(400, "Agent's model credential not found");

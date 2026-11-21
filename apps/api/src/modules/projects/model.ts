@@ -294,6 +294,19 @@ export const updateMonitoringSettingsBody = t.Object({
   timeZone: t.Literal('Asia/Ho_Chi_Minh'),
 });
 
+export const TaskLifecycleSettingsResponse = t.Object({
+  enabled: t.Boolean(),
+  reminderHours: t.Integer({ minimum: 1, maximum: 720 }),
+  escalationHours: t.Integer({ minimum: 2, maximum: 720 }),
+  enabledAt: t.Nullable(t.String()),
+});
+
+export const updateTaskLifecycleSettingsBody = t.Object({
+  enabled: t.Boolean(),
+  reminderHours: t.Integer({ minimum: 1, maximum: 720 }),
+  escalationHours: t.Integer({ minimum: 2, maximum: 720 }),
+});
+
 // Ten years, well inside the range make_interval and a timestamp can hold.
 export const MAX_AUTO_ARCHIVE_DAYS = 3650;
 

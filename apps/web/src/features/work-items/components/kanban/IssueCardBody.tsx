@@ -95,7 +95,7 @@ export function IssueCardBody({
             <TooltipContent>{column.name}</TooltipContent>
           </Tooltip>
         )}
-        <span dir="auto" className="line-clamp-2 text-sm leading-snug text-foreground">
+        <span dir="auto" className="line-clamp-2 text-sm leading-snug font-medium text-foreground">
           {issue.title}
         </span>
       </div>
@@ -109,7 +109,7 @@ export function IssueCardBody({
                   variant="outline"
                   className="rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground"
                 >
-                  <Timer className="size-2.5" />
+                  <Timer className="size-2.5" />Ở trạng thái:{' '}
                   {formatDurationShort(issue.statusSince)}
                 </Badge>
               </TooltipTrigger>
@@ -178,7 +178,7 @@ export function IssueCardBody({
               className="rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground"
             >
               <Clock className="size-2.5" />
-              {formatMinutes(issue.estimateMinutes)}
+              Ước tính: {formatMinutes(issue.estimateMinutes)}
             </Badge>
           )}
           {has('labels') &&

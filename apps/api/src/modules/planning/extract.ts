@@ -6,6 +6,11 @@ import { HttpError } from '#shared/lib';
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_SOURCE_CHARS = 60000;
 
+interface DocumentLimits {
+  maxFileBytes?: number;
+  maxSourceChars?: number;
+}
+
 function checkDocx(bytes: Buffer) {
   let entries = 0,
     expanded = 0;
@@ -51,9 +56,18 @@ function checkDocx(bytes: Buffer) {
   if (!entries) throw new HttpError(400, 'Unreadable or encrypted DOCX');
 }
 
-export async function extractDocument(filename: string, bytes: Buffer): Promise<string> {
-  if (!bytes.length || bytes.length > MAX_FILE_BYTES)
-    throw new HttpError(400, 'Document must be between 1 byte and 5 MB');
+export async function extractDocument(
+  filename: string,
+  bytes: Buffer,
+  limits: DocumentLimits = {},
+): Promise<string> {
+  const maxFileBytes = limits.maxFileBytes ?? MAX_FILE_BYTES;
+  const maxSourceChars = limits.maxSourceChars ?? MAX_SOURCE_CHARS;
+  if (!bytes.length || bytes.length > maxFileBytes)
+    throw new HttpError(
+      400,
+      `Document must be between 1 byte and ${maxFileBytes / 1024 / 1024} MB`,
+    );
   let text: string;
   if (/\.pdf$/i.test(filename)) {
     if (!bytes.subarray(0, 8).toString().startsWith('%PDF-'))
@@ -71,7 +85,10 @@ export async function extractDocument(filename: string, bytes: Buffer): Promise<
   } else throw new HttpError(400, 'Only text-based PDF and DOCX documents are supported');
   text = text.replace(/\r\n/g, '\n').trim();
   if (!text) throw new HttpError(400, 'Document has no readable text');
-  if (text.length > MAX_SOURCE_CHARS)
-    throw new HttpError(400, 'Extracted text exceeds 60,000 characters; split the document');
+  if (text.length > maxSourceChars)
+    throw new HttpError(
+      400,
+      `Extracted text exceeds ${maxSourceChars.toLocaleString('en-US')} characters; split the document`,
+    );
   return text;
 }

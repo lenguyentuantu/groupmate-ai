@@ -14,6 +14,7 @@ export default function AuthLoginPasswordFields({
   identifier,
   password,
   pending,
+  forgotPasswordHref,
   onIdentifierChange,
   onPasswordChange,
 }: {
@@ -21,6 +22,7 @@ export default function AuthLoginPasswordFields({
   identifier: string;
   password: string;
   pending: boolean;
+  forgotPasswordHref: string;
   onIdentifierChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
 }) {
@@ -51,7 +53,7 @@ export default function AuthLoginPasswordFields({
             <FieldLabel htmlFor="password">{t('fields.password')}</FieldLabel>
             {authConfig?.emailEnabled && (
               <Link
-                href="/forgot-password"
+                href={forgotPasswordHref}
                 className="text-sm text-muted-foreground underline-offset-4 hover:underline"
               >
                 {t('login.forgotPassword')}

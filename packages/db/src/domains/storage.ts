@@ -3,6 +3,7 @@ import { db, type DbExecutor } from '../client';
 import { getSetting } from '../settings';
 import {
   chatAttachment,
+  deliverableSubmission,
   documentAsset,
   initiative,
   initiativeAttachment,
@@ -10,6 +11,7 @@ import {
   issueAttachment,
   project,
   projectDocument,
+  projectFile,
   team,
 } from '../schema';
 
@@ -110,7 +112,7 @@ export async function lockAttachmentStorage(
 }
 
 // Total attachment bytes a project has stored, across every kind that counts
-// against its quota (issue, chat, document, initiative attachments) — what a new
+// against its quota (issue, chat, deliverable, document, initiative attachments) — what a new
 // upload's size is checked against before it is allowed, and what a worker
 // importing issue attachments checks against too. Runs against either the plain
 // db or a transaction: a caller commonly checks capacity and inserts in the same
@@ -128,11 +130,19 @@ export async function projectStoredBytes(
     .select({ total: sql<string>`coalesce(sum(${chatAttachment.sizeBytes}), 0)` })
     .from(chatAttachment)
     .where(eq(chatAttachment.projectId, projectId));
+  const deliverables = await executor
+    .select({ total: sql<string>`coalesce(sum(${deliverableSubmission.sizeBytes}), 0)` })
+    .from(deliverableSubmission)
+    .where(eq(deliverableSubmission.projectId, projectId));
   const documents = await executor
     .select({ total: sql<string>`coalesce(sum(${documentAsset.sizeBytes}), 0)` })
     .from(documentAsset)
     .innerJoin(projectDocument, eq(projectDocument.id, documentAsset.documentId))
     .where(eq(projectDocument.projectId, projectId));
+  const projectFiles = await executor
+    .select({ total: sql<string>`coalesce(sum(${projectFile.sizeBytes}), 0)` })
+    .from(projectFile)
+    .where(eq(projectFile.projectId, projectId));
   const initiatives = await executor
     .select({ total: sql<string>`coalesce(sum(${initiativeAttachment.sizeBytes}), 0)` })
     .from(initiativeAttachment)
@@ -141,7 +151,9 @@ export async function projectStoredBytes(
   return (
     num(issues[0]?.total) +
     num(chats[0]?.total) +
+    num(deliverables[0]?.total) +
     num(documents[0]?.total) +
+    num(projectFiles[0]?.total) +
     num(initiatives[0]?.total)
   );
 }
@@ -178,11 +190,23 @@ export async function workspaceStoredBytes(
     .innerJoin(project, eq(project.id, chatAttachment.projectId))
     .innerJoin(team, eq(team.id, project.teamId))
     .where(eq(team.workspaceId, workspaceId));
+  const deliverables = await executor
+    .select({ total: sql<string>`coalesce(sum(${deliverableSubmission.sizeBytes}), 0)` })
+    .from(deliverableSubmission)
+    .innerJoin(project, eq(project.id, deliverableSubmission.projectId))
+    .innerJoin(team, eq(team.id, project.teamId))
+    .where(eq(team.workspaceId, workspaceId));
   const documents = await executor
     .select({ total: sql<string>`coalesce(sum(${documentAsset.sizeBytes}), 0)` })
     .from(documentAsset)
     .innerJoin(projectDocument, eq(projectDocument.id, documentAsset.documentId))
     .innerJoin(project, eq(project.id, projectDocument.projectId))
+    .innerJoin(team, eq(team.id, project.teamId))
+    .where(eq(team.workspaceId, workspaceId));
+  const projectFiles = await executor
+    .select({ total: sql<string>`coalesce(sum(${projectFile.sizeBytes}), 0)` })
+    .from(projectFile)
+    .innerJoin(project, eq(project.id, projectFile.projectId))
     .innerJoin(team, eq(team.id, project.teamId))
     .where(eq(team.workspaceId, workspaceId));
   const initiatives = await executor
@@ -195,7 +219,9 @@ export async function workspaceStoredBytes(
   return (
     num(issues[0]?.total) +
     num(chats[0]?.total) +
+    num(deliverables[0]?.total) +
     num(documents[0]?.total) +
+    num(projectFiles[0]?.total) +
     num(initiatives[0]?.total)
   );
 }

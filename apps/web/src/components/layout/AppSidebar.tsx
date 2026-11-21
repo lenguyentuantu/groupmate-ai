@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { Braces, Server, Shield } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { Project } from '@/lib/api/endpoints/projects';
 import { useSession } from '@/lib/auth-client';
-import { apiDocsPath, godPath, mcpServerPath } from '@/utils/paths';
+import { godPath } from '@/utils/paths';
 import { GOD_SECTIONS } from '@/utils/godSections';
 import { useSettingsNavGroups } from '@/hooks/useSettingsNavGroups';
 import { useSidebarSide } from '@/hooks/useSidebarSide';
@@ -23,12 +22,13 @@ import ProjectSwitcher from '@/components/layout/ProjectSwitcher';
 import SidebarNavItem from '@/components/layout/SidebarNavItem';
 import SidebarMainNav from '@/components/layout/SidebarMainNav';
 import SidebarSettingsNav from '@/components/layout/SidebarSettingsNav';
+import SidebarLegacyNav from '@/components/layout/SidebarLegacyNav';
 import SidebarBrandFooter from '@/components/brand/SidebarBrandFooter';
 
 // The app sidebar. It has two modes driven by the route: the main work
 // navigation, and the project settings navigation reached through the "Project
-// settings" entry. The project switcher header and the footer (API docs, MCP
-// server, brand mark) are shared by both modes. Creating and deleting a project
+// settings" entry. The project switcher header and the footer are shared by both
+// modes. Creating and deleting a project
 // live in the team panel on Manage teams, not here.
 export default function AppSidebar({
   projects,
@@ -40,8 +40,6 @@ export default function AppSidebar({
   onSelectProject: (key: string) => void;
 }) {
   const t = useTranslations('nav');
-  const pathname = usePathname();
-  const disabled = !currentProjectKey;
   const projectId = projects.find((p) => p.ref === currentProjectKey)?.id ?? null;
 
   const { data: session } = useSession();
@@ -58,8 +56,6 @@ export default function AppSidebar({
   // sidebar.
   const settingsNav = useSettingsNavGroups(currentProjectKey);
   const settingsMode = settingsNav.groups.some((g) => g.items.some((i) => i.active));
-  const onApiDocs = pathname.endsWith('/api');
-  const onMcp = pathname.endsWith('/mcp');
   const side = useSidebarSide();
 
   return (
@@ -84,20 +80,7 @@ export default function AppSidebar({
         {!settingsMode && (
           <>
             <SidebarMenu>
-              <SidebarNavItem
-                href={currentProjectKey ? apiDocsPath(currentProjectKey) : '#'}
-                icon={Braces}
-                label={t('apiDocs')}
-                active={onApiDocs}
-                disabled={disabled}
-              />
-              <SidebarNavItem
-                href={currentProjectKey ? mcpServerPath(currentProjectKey) : '#'}
-                icon={Server}
-                label={t('mcpServer')}
-                active={onMcp}
-                disabled={disabled}
-              />
+              <SidebarLegacyNav projectKey={currentProjectKey} />
               {/* Instance administration, only for the owner account. The API
                   enforces the same, so hiding it here is about noise, not access. */}
               {isGod && (

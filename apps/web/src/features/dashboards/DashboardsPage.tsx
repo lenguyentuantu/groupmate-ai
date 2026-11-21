@@ -15,6 +15,7 @@ import { useDashboardEditor } from './hooks/useDashboardEditor';
 import DashboardTabs from './components/DashboardTabs';
 import WidgetGrid from './components/WidgetGrid';
 import AddWidgetDialog from './components/AddWidgetDialog';
+import DashboardWorkspaceOverview from './components/DashboardWorkspaceOverview';
 
 // The dashboards section: a tab strip of named dashboards over a grid of analytics
 // widgets. The active dashboard comes from the route; with none selected the
@@ -138,6 +139,7 @@ export default function DashboardsPage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+          {editor.isVirtual && <DashboardWorkspaceOverview project={project} />}
           <WidgetGrid projectKey={projectKey} project={project} editor={editor} editing={editing} />
         </div>
       </div>

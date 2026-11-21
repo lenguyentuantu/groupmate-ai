@@ -11,11 +11,26 @@ import { BulkActionBar } from './BulkActionBar';
 // Both share one multi-select: the provider holds the selection and the bulk-action
 // bar acts on it. `validIds` are the issues currently on the board, so a selected
 // issue that leaves (deleted, archived, filtered out) drops from the selection.
-export default function KanbanBoard(props: WorkItemsViewProps) {
-  const validIds = useMemo(
-    () => new Set(props.project.issues.map((i) => i.id)),
-    [props.project.issues],
-  );
+export default function KanbanBoard(
+  props: WorkItemsViewProps & {
+    simpleStatusBoard?: boolean;
+    showSimpleStatusToggle?: boolean;
+    onSimpleStatusBoardChange?: (simple: boolean) => void;
+  },
+) {
+  const validIds = useMemo(() => {
+    if (!props.simpleStatusBoard) return new Set(props.project.issues.map((issue) => issue.id));
+    const visibleColumnIds = new Set(
+      props.project.columns
+        .filter((column) => column.stateType !== 'canceled')
+        .map((column) => column.id),
+    );
+    return new Set(
+      props.project.issues
+        .filter((issue) => visibleColumnIds.has(issue.columnId))
+        .map((issue) => issue.id),
+    );
+  }, [props.project.columns, props.project.issues, props.simpleStatusBoard]);
 
   if (props.project.issues.length === 0 && !props.settings.showEmptyGroups) {
     return <WorkItemsEmpty filters={props.filters} />;

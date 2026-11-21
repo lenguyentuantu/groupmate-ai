@@ -1,5 +1,5 @@
-// The languages the interface ships with. `en` is the source language: every key
-// exists in `messages/en.json`, and a missing translation falls back to it.
+// The languages the interface ships with. The default catalog retains the `en`
+// identifier for compatibility with saved account preferences.
 export const LOCALES = [
   'en',
   'uk',
@@ -27,7 +27,7 @@ export const LOCALE_COOKIE = 'NEXT_LOCALE';
 
 // Each language named in itself, which is what a person scanning the list looks for.
 export const LOCALE_LABELS: Record<Locale, string> = {
-  en: 'English',
+  en: 'Tiếng Việt',
   uk: 'Українська',
   ru: 'Русский',
   'zh-CN': '简体中文',
@@ -43,7 +43,7 @@ export const LOCALE_LABELS: Record<Locale, string> = {
 };
 
 export const LOCALE_FLAGS: Record<Locale, string> = {
-  en: '🇬🇧',
+  en: '🇻🇳',
   uk: '🇺🇦',
   ru: '🇷🇺',
   'zh-CN': '🇨🇳',

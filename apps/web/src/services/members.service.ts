@@ -145,6 +145,8 @@ export function useSendInviteEmail(projectKey: string) {
       if (result.emailQueued) toast.success(t('emailQueued'));
       else toast.info(t('resendUnavailable'));
     },
+    onError: () => toast.error(t('resendFailed')),
+    meta: { suppressErrorToast: true },
   });
 }
 

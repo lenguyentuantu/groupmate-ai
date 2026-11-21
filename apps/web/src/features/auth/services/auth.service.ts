@@ -12,6 +12,12 @@ import {
 const appUrl = (path: string) =>
   typeof window === 'undefined' ? path : `${window.location.origin}${path}`;
 
+export function safeAuthReturnTo(value: string | null | undefined): string | undefined {
+  return value?.startsWith('/') && !value.startsWith('//') && !value.includes('\\')
+    ? value
+    : undefined;
+}
+
 // Each call throws an AuthError on failure; on success the session cookie is set and
 // the proxy lets the user into the planner. The caller words the failure by its code
 // and status, since the server's message is English.
@@ -80,10 +86,13 @@ export async function signUpWithEmail(input: { email: string; password: string }
 // The address is carried in redirectTo so the reset screen can sign the user in once
 // the new password is set: better-auth keeps the query it is given and adds its own
 // `token` to it.
-export async function sendPasswordResetEmail(email: string): Promise<void> {
+export async function sendPasswordResetEmail(email: string, returnTo?: string): Promise<void> {
+  const params = new URLSearchParams({ email });
+  const safeReturnTo = safeAuthReturnTo(returnTo);
+  if (safeReturnTo) params.set('returnTo', safeReturnTo);
   const result = await requestPasswordReset({
     email,
-    redirectTo: appUrl(`/reset-password?email=${encodeURIComponent(email)}`),
+    redirectTo: appUrl(`/reset-password?${params.toString()}`),
   });
   if (result.error) throw authError(result.error);
 }
@@ -105,13 +114,16 @@ export async function setNewPassword(input: {
 
 // Sends a one-time sign-in link. Rejected by the API when the instance has magic
 // links turned off.
-export async function sendMagicLink(email: string): Promise<void> {
+export async function sendMagicLink(email: string, returnTo?: string): Promise<void> {
+  const destination = safeAuthReturnTo(returnTo) ?? '/';
   // A refused sign-up comes back to errorCallbackURL; on / it would be lost in the
   // redirect to the sign-in page.
   const result = await signIn.magicLink({
     email,
-    callbackURL: appUrl('/'),
-    errorCallbackURL: appUrl('/login'),
+    callbackURL: appUrl(destination),
+    errorCallbackURL: appUrl(
+      destination === '/' ? '/login' : `/login?returnTo=${encodeURIComponent(destination)}`,
+    ),
   });
   if (result.error) throw authError(result.error);
 }

@@ -66,6 +66,8 @@ import {
   EmailTemplatesBody,
   EmailTemplatesResponse,
   EmailTestResponse,
+  AiProviderSettingsBody,
+  AiProviderSettingsResponse,
   GoogleSettingsBody,
   GoogleSettingsResponse,
   InstanceProjectDetailResponse,
@@ -90,6 +92,7 @@ import {
   teamParams,
   userParams,
 } from './model';
+import { getAiProviderSettings, setAiProviderSettings } from './ai-provider';
 import { deliverTestEmail } from './email-test';
 import {
   getEmailTemplates,
@@ -522,6 +525,17 @@ export const godRoutes = new Elysia({ name: 'god', detail: { tags: ['God'] } })
         "Update what applies to every team's agents. A shorter trace retention takes effect " +
         'on the next sweep, which deletes the traces already past it.',
     },
+  })
+
+  .get('/god/ai-provider-settings', () => getAiProviderSettings(), {
+    response: { 200: AiProviderSettingsResponse, ...errors(401, 403) },
+    detail: { summary: 'Get built-in AI provider settings' },
+  })
+
+  .put('/god/ai-provider-settings', ({ body }) => setAiProviderSettings(body), {
+    body: AiProviderSettingsBody,
+    response: { 200: AiProviderSettingsResponse, ...errors(400, 401, 403) },
+    detail: { summary: 'Update built-in AI provider settings' },
   })
 
   .get('/god/sharing-settings', () => getSharingSettings(), {

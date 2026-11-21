@@ -1709,6 +1709,11 @@ export const issue = pgTable(
     // moment the link reads as revoked everywhere, and the api's share-expiry sweep
     // clears the token.
     shareExpiresAt: timestamp('share_expires_at', { withTimezone: true }),
+    readyAt: timestamp('ready_at', { withTimezone: true }),
+    readinessCycle: integer('readiness_cycle').notNull().default(0),
+    readinessAssigneeUserId: text('readiness_assignee_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -1739,6 +1744,9 @@ export const issue = pgTable(
     index('issue_initiative_idx')
       .on(t.initiativeId)
       .where(sql`${t.initiativeId} IS NOT NULL`),
+    index('issue_ready_idx')
+      .on(t.projectId, t.readyAt)
+      .where(sql`${t.readyAt} IS NOT NULL`),
   ],
 );
 
@@ -1958,6 +1966,66 @@ export const issueAttachment = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('issue_attachment_issue_idx').on(t.issueId)],
+);
+
+export const deliverableSubmission = pgTable(
+  'deliverable_submission',
+  {
+    id: serial('id').primaryKey(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    issueId: integer('issue_id')
+      .notNull()
+      .references(() => issue.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    s3Key: text('s3_key').notNull(),
+    filename: text('filename').notNull(),
+    contentType: text('content_type').notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
+    submittedByUserId: text('submitted_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    submittedByActorId: text('submitted_by_actor_id').notNull(),
+    submittedByActorName: text('submitted_by_actor_name').notNull(),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
+    reviewStatus: text('review_status').notNull().default('not_requested'),
+    reviewAttemptCount: integer('review_attempt_count').notNull().default(0),
+    reviewRequestedByUserId: text('review_requested_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    reviewStartedAt: timestamp('review_started_at', { withTimezone: true }),
+    reviewResult: jsonb('review_result'),
+    reviewModel: text('review_model'),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewError: text('review_error'),
+    decision: text('decision'),
+    decisionComment: text('decision_comment'),
+    decidedByUserId: text('decided_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    decidedByActorId: text('decided_by_actor_id'),
+    decidedByActorName: text('decided_by_actor_name'),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('deliverable_submission_issue_version_uq').on(t.issueId, t.version),
+    index('deliverable_submission_issue_idx').on(t.issueId, t.submittedAt),
+    index('deliverable_submission_project_idx').on(t.projectId, t.submittedAt),
+    check('deliverable_submission_version_check', sql`${t.version} > 0`),
+    check(
+      'deliverable_submission_review_status_check',
+      sql`${t.reviewStatus} IN ('not_requested', 'pending', 'completed', 'failed')`,
+    ),
+    check(
+      'deliverable_submission_review_attempt_check',
+      sql`${t.reviewAttemptCount} >= 0 AND ${t.reviewAttemptCount} <= 3`,
+    ),
+    check(
+      'deliverable_submission_decision_check',
+      sql`${t.decision} IS NULL OR ${t.decision} IN ('ACCEPT', 'REQUEST_REVISION')`,
+    ),
+  ],
 );
 
 export const issueDevelopmentLink = pgTable(
@@ -2476,6 +2544,31 @@ export const documentAsset = pgTable(
   (t) => [index('document_asset_document_idx').on(t.documentId, t.createdAt)],
 );
 
+export const projectFile = pgTable(
+  'project_file',
+  {
+    id: serial('id').primaryKey(),
+    publicId: uuid('public_id').notNull().defaultRandom().unique(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    uploadedByUserId: text('uploaded_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    uploadedByName: text('uploaded_by_name').notNull(),
+    s3Key: text('s3_key').notNull(),
+    filename: text('filename').notNull(),
+    contentType: text('content_type').notNull(),
+    sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
+    contentSha256: text('content_sha256').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('project_file_project_sha256_uq').on(t.projectId, t.contentSha256),
+    index('project_file_project_created_idx').on(t.projectId, t.createdAt),
+  ],
+);
+
 // Note boards: a freeform canvas of sticky notes. canvas is a jsonb blob owned by
 // the UI (React Flow nodes + edges + viewport), stored and returned verbatim.
 // owner_user_id NULL means a public board visible to every project member; a set
@@ -2726,7 +2819,7 @@ export const notification = pgTable(
   (t) => [
     check(
       'notification_type_check',
-      sql`${t.type} IN ('assigned', 'mentioned', 'commented', 'state_changed', 'monitoring')`,
+      sql`${t.type} IN ('assigned', 'mentioned', 'commented', 'state_changed', 'monitoring', 'ready', 'reminder', 'escalation')`,
     ),
     check('notification_target_check', sql`(${t.issueId} IS NULL) <> (${t.documentId} IS NULL)`),
     // Backs the inbox list: a user's notifications newest first.

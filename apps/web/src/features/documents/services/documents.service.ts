@@ -8,6 +8,7 @@ import {
   type ProjectDocumentPatch,
   type ProjectDocumentRevisionSummary,
   type ProjectDocumentSummary,
+  type ProjectFile,
   listDocuments,
   getDocument,
   listDocumentIssueLinks,
@@ -26,7 +27,9 @@ import {
   setDocumentFavorite,
   listDocumentRevisions,
   listDocumentAssets,
+  listProjectFiles,
   uploadDocumentAsset,
+  uploadProjectFile,
   deleteDocumentAsset,
   restoreDocumentRevision,
   updateDocument,
@@ -304,6 +307,28 @@ export function useDocumentAssetsQuery(projectKey: string | null, documentId: nu
     queryKey: qk.documentAssets(projectKey ?? '', documentId ?? 0),
     queryFn: () => listDocumentAssets(projectKey!, documentId!),
     enabled: projectKey != null && documentId != null,
+  });
+}
+
+export function useProjectFilesQuery(projectKey: string | null) {
+  return useQuery<ProjectFile[]>({
+    queryKey: qk.projectFiles(projectKey ?? ''),
+    queryFn: () => listProjectFiles(projectKey!),
+    enabled: projectKey != null,
+  });
+}
+
+export function useUploadProjectFile(projectKey: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => uploadProjectFile(projectKey!, file),
+    onSuccess: (file) => {
+      if (!projectKey) return;
+      qc.setQueryData<ProjectFile[]>(qk.projectFiles(projectKey), (previous) => [
+        file,
+        ...(previous ?? []),
+      ]);
+    },
   });
 }
 

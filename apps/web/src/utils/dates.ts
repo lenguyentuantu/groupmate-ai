@@ -23,6 +23,7 @@ export function getDisplayLocale(): string {
 // calendar grids and the date picker are Gregorian, so a date written in one and
 // picked in the other would not match; pin Persian to the Gregorian calendar.
 export function getIntlLocale(): string {
+  if (displayLocale === DEFAULT_LOCALE) return 'vi-VN';
   return displayLocale === 'fa' ? 'fa-u-ca-gregory' : displayLocale;
 }
 

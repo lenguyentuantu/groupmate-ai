@@ -5,6 +5,9 @@ const EventToggles = t.Object({
   mentioned: t.Boolean(),
   commented: t.Boolean(),
   state_changed: t.Boolean(),
+  ready: t.Optional(t.Boolean()),
+  reminder: t.Optional(t.Boolean()),
+  escalation: t.Optional(t.Boolean()),
   monitoring: t.Boolean(),
 });
 

@@ -38,7 +38,7 @@ export default function SidebarBrandFooter() {
       <BrandMark className="size-9 shrink-0 text-sidebar-foreground" />
       <div className="grid text-left leading-none group-data-[collapsible=icon]:hidden">
         <span className="text-base font-semibold tracking-tight text-sidebar-foreground">
-          It&apos;s a Plan
+          GroupMate AI
         </span>
         {newerVersion ? (
           <span className="mt-1 flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-primary uppercase">
@@ -48,11 +48,11 @@ export default function SidebarBrandFooter() {
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
               <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
             </span>
-            {`v${newerVersion} available`}
+            {`Có bản v${newerVersion}`}
           </span>
         ) : (
           <span className="mt-1 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-            {version ? `v${version}` : 'Self-hosted'}
+            {version ? `v${version}` : 'Tự lưu trữ'}
           </span>
         )}
       </div>

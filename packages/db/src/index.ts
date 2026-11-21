@@ -19,6 +19,13 @@ export {
   type InstanceEmailConfig,
 } from './domains/instance-email';
 export {
+  INSTANCE_AI_SECRET_KEY,
+  defaultInstanceAiConfig,
+  getInstanceAiConfig,
+  getProjectAiConfig,
+  type InstanceAiConfig,
+} from './domains/instance-ai';
+export {
   defaultNotificationConfig,
   emailSource,
   getDeliveryConfig,

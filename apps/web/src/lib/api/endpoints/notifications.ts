@@ -4,7 +4,14 @@ import type { StateType } from '@/lib/api/endpoints/columns';
 // Inbox notifications. Each row is enriched with the issue or the document and the
 // project it points at, so the list renders without extra calls.
 export type NotificationType =
-  'assigned' | 'mentioned' | 'commented' | 'state_changed' | 'monitoring';
+  | 'assigned'
+  | 'mentioned'
+  | 'commented'
+  | 'state_changed'
+  | 'ready'
+  | 'reminder'
+  | 'escalation'
+  | 'monitoring';
 
 // The issue fields are set on an issue's notification, the document fields on a
 // document's.
@@ -59,7 +66,7 @@ export type NotificationDeleteScope = 'all' | 'read' | 'read-completed' | 'compl
 // one project (the per-project inbox). cursor is the JSON-encoded keyset from the
 // previous page.
 export const listNotifications = (
-  projectId: number,
+  projectId?: number,
   params: {
     cursor?: NotificationCursor | null;
     limit?: number;
@@ -67,7 +74,7 @@ export const listNotifications = (
   } = {},
 ) => {
   const q = new URLSearchParams();
-  q.set('projectId', String(projectId));
+  if (projectId != null) q.set('projectId', String(projectId));
   if (params.limit) q.set('limit', String(params.limit));
   if (params.cursor) q.set('cursor', JSON.stringify(params.cursor));
   const f = params.filters ?? {};

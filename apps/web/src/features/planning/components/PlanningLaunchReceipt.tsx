@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import type { ApprovalReceipt } from '@/lib/api/endpoints/planning';
 import { formatDateTime } from '@/utils/dates';
 import { issuePath, projectPath } from '@/utils/paths';
+import { readinessCodeTitle } from '../utils/planningReadiness';
 
 export default function PlanningLaunchReceipt({
   projectRef,
@@ -56,7 +57,9 @@ export default function PlanningLaunchReceipt({
       </div>
       {receipt.acknowledgedRiskCodes.length > 0 && (
         <p className="text-sm text-muted-foreground">
-          {t('acknowledgedRisks', { risks: receipt.acknowledgedRiskCodes.join(', ') })}
+          {t('acknowledgedRisks', {
+            risks: receipt.acknowledgedRiskCodes.map(readinessCodeTitle).join(', '),
+          })}
         </p>
       )}
       <Button asChild>

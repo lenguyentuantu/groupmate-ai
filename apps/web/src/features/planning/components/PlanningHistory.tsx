@@ -27,7 +27,9 @@ export default function PlanningHistory({ projectRef, id }: { projectRef: string
           {t('version', { version: item.version })} · {new Date(item.createdAt).toLocaleString()}
         </Button>
       ))}
-      <ListPager paging={paging} total={history.data?.total ?? 0} />
+      {history.data && history.data.total > paging.params.pageSize && (
+        <ListPager paging={paging} total={history.data.total} />
+      )}
       {version !== null && revision.isPending && <p role="status">{t('loading')}</p>}
       {revision.isError && <p role="alert">{revision.error.message}</p>}
       {revision.data && (

@@ -8,7 +8,7 @@ import {
   type ConfigField,
 } from '@repo/agent-tools';
 import { iso, HttpError } from '#shared/lib';
-import { encryptSecret, decryptSecret } from '@repo/crypto';
+import { encryptSecret, decryptSecret, SecretDecryptionError } from '@repo/crypto';
 import { credentialSchemaFor } from './catalog';
 
 // Data access for integration credentials. They belong to the team, so a
@@ -121,7 +121,17 @@ async function decrypt(id: number, teamId: number): Promise<ToolConfig | null> {
     .where(and(eq(integrationCredential.id, id), eq(integrationCredential.teamId, teamId)));
   const row = rows[0];
   if (!row) return null;
-  return JSON.parse(decryptSecret(row)) as ToolConfig;
+  try {
+    return JSON.parse(decryptSecret(row)) as ToolConfig;
+  } catch (error) {
+    if (error instanceof SecretDecryptionError || error instanceof SyntaxError) {
+      throw new HttpError(
+        400,
+        'Stored integration credential is invalid. Re-enter it in team integrations.',
+      );
+    }
+    throw error;
+  }
 }
 
 export interface NewCredentialInput {

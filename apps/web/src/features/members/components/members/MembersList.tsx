@@ -90,7 +90,7 @@ export default function MembersList({
   return (
     <div className="mb-8 flex min-h-0 flex-1 flex-col gap-4">
       <Tabs value={kind} onValueChange={onKindChange}>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <TabsList variant="line" className="w-auto border-b-0">
             <TabsTrigger value="all">{t('tabs.all')}</TabsTrigger>
             <TabsTrigger value="human">{t('tabs.people')}</TabsTrigger>
@@ -100,7 +100,7 @@ export default function MembersList({
             value={search}
             onChange={onSearchChange}
             placeholder={searchPlaceholder}
-            className="w-60 shrink-0"
+            className="w-full shrink-0 sm:w-60"
           />
         </div>
       </Tabs>
@@ -108,46 +108,48 @@ export default function MembersList({
       {members.length === 0 ? (
         <MembersEmptyState kind={kind} searching={term !== undefined} />
       ) : (
-        <Table className="min-w-[720px] table-fixed">
-          <colgroup>
-            <col className="w-[36%]" />
-            <col className="w-[17%]" />
-            <col className="w-[17%]" />
-            <col className="w-[13%]" />
-            <col className="w-[17%]" />
-          </colgroup>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="text-xs font-medium text-muted-foreground">
-                {t('columns.member')}
-              </TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">
-                {t('columns.role')}
-              </TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">
-                {t('columns.timezone')}
-              </TableHead>
-              <TableHead className="text-xs font-medium text-muted-foreground">
-                {t('columns.joined')}
-              </TableHead>
-              <TableHead className="text-right text-xs font-medium text-muted-foreground">
-                {t('columns.actions')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((m) => (
-              <MemberRow
-                key={m.userId}
-                projectKey={projectKey}
-                member={m}
-                roles={roles}
-                isLastOwner={m.role === 'owner' && ownerCount === 1}
-                onRemove={setTarget}
-              />
-            ))}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto rounded-xl border bg-card shadow-xs">
+          <Table className="min-w-[720px] table-fixed">
+            <colgroup>
+              <col className="w-[36%]" />
+              <col className="w-[17%]" />
+              <col className="w-[17%]" />
+              <col className="w-[13%]" />
+              <col className="w-[17%]" />
+            </colgroup>
+            <TableHeader className="bg-muted/45">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  {t('columns.member')}
+                </TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  {t('columns.role')}
+                </TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  {t('columns.timezone')}
+                </TableHead>
+                <TableHead className="text-xs font-medium text-muted-foreground">
+                  {t('columns.joined')}
+                </TableHead>
+                <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                  {t('columns.actions')}
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members.map((m) => (
+                <MemberRow
+                  key={m.userId}
+                  projectKey={projectKey}
+                  member={m}
+                  roles={roles}
+                  isLastOwner={m.role === 'owner' && ownerCount === 1}
+                  onRemove={setTarget}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       {total > 0 && <ListPager paging={paging} total={total} />}

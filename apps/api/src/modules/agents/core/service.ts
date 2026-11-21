@@ -19,7 +19,7 @@ import { auth } from '@repo/auth';
 import { iso, HttpError, rethrowDuplicate } from '#shared/lib';
 import { getCredentialById } from '../integrations/service';
 import { integrationKind } from '../integrations/catalog';
-import { encryptSecret, decryptSecret } from '@repo/crypto';
+import { encryptSecret, decryptSecret, SecretDecryptionError } from '@repo/crypto';
 import { normalizeToolKeys, ALWAYS_ON_ACTIONS } from './runtime/tools/catalog';
 import { deleteThreadsWhere } from './runtime/memory';
 import { listAgentMemberFieldIds } from '#modules/custom-fields/service';
@@ -814,11 +814,21 @@ async function readAgentKey(agentId: number): Promise<string | null> {
   return decryptSecret({ ciphertext: row.ciphertext, iv: row.iv, authTag: row.authTag });
 }
 
+async function readRecoverableAgentKey(agentId: number): Promise<string | null> {
+  try {
+    return await readAgentKey(agentId);
+  } catch (error) {
+    if (error instanceof SecretDecryptionError) return null;
+    throw error;
+  }
+}
+
 // The API key an internal agent authenticates its own tool calls with, provisioning
-// one if it has none. Agents created before the key was introduced have no stored
-// secret (and may predate the team membership too), so both are filled in on first use
-// rather than in a data migration — better-auth issues a key through its API, which
-// a SQL migration cannot call.
+// one if it is missing or its ciphertext cannot be authenticated. This key belongs
+// only to the bot and can be replaced; provider credentials cannot. Agents created
+// before the key was introduced may also predate the team membership, so both are
+// filled in on first use rather than in a data migration — better-auth issues a key
+// through its API, which a SQL migration cannot call.
 //
 // Provisioning is serialized per agent with an advisory lock. Runs are claimed in
 // batches and across replicas (see run-queue), so two runs of the same unprovisioned
@@ -827,14 +837,14 @@ async function readAgentKey(agentId: number): Promise<string | null> {
 // key would be just as wrong: the agent reads join apikey on the bot user, so two
 // rows would list the agent twice.
 export async function getInternalAgentApiKey(agent: AiAgentRow): Promise<string> {
-  const existing = await readAgentKey(agent.id);
+  const existing = await readRecoverableAgentKey(agent.id);
   if (existing) return existing;
 
   return db.transaction(async (tx) => {
     // Held until this transaction ends. A concurrent run blocks here and then finds
     // the key the winner stored, instead of issuing a second one.
     await tx.execute(sql`select pg_advisory_xact_lock(${KEY_PROVISION_LOCK_NS}, ${agent.id})`);
-    const won = await readAgentKey(agent.id);
+    const won = await readRecoverableAgentKey(agent.id);
     if (won) return won;
 
     await tx

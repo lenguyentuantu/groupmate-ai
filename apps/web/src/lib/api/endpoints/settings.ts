@@ -70,6 +70,25 @@ export const updateMonitoringSettings = (
     body: JSON.stringify(input),
   });
 
+export interface TaskLifecycleSettings {
+  enabled: boolean;
+  reminderHours: number;
+  escalationHours: number;
+  enabledAt: string | null;
+}
+
+export const getTaskLifecycleSettings = (projectKey: string) =>
+  request<TaskLifecycleSettings>(`/projects/${projectKey}/settings/task-lifecycle-notifications`);
+
+export const updateTaskLifecycleSettings = (
+  projectKey: string,
+  input: Pick<TaskLifecycleSettings, 'enabled' | 'reminderHours' | 'escalationHours'>,
+) =>
+  request<TaskLifecycleSettings>(`/projects/${projectKey}/settings/task-lifecycle-notifications`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+
 export interface StorageSettings {
   maxAttachmentMb: number;
   maxAvatarMb: number;

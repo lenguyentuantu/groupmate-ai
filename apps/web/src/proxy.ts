@@ -36,7 +36,7 @@ function matcher(pathname: string) {
 // Expires every better-auth cookie the request carries. A `__Secure-` name is only
 // accepted back with `secure`, so the deletion carries it too.
 function clearSession(request: NextRequest): NextResponse {
-  const response = NextResponse.next();
+  const response = authPageResponse(request);
   for (const { name } of request.cookies.getAll()) {
     if (!name.includes('better-auth.')) continue;
     // A __Secure- or __Host- name is only accepted back with `secure`.
@@ -44,6 +44,20 @@ function clearSession(request: NextRequest): NextResponse {
     response.cookies.delete({ name, path: '/', secure });
   }
   return response;
+}
+
+function authPageResponse(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+  const isAuthPage =
+    pathname === '/login' ||
+    pathname.startsWith('/login/') ||
+    pathname === '/register' ||
+    pathname.startsWith('/register/');
+  if (!isAuthPage) return NextResponse.next();
+
+  const headers = new Headers(request.headers);
+  headers.set('x-auth-default-locale', 'vi');
+  return NextResponse.next({ request: { headers } });
 }
 
 export async function proxy(request: NextRequest) {
@@ -91,7 +105,7 @@ function gate(request: NextRequest): NextResponse {
     // does not know, a provider callback that failed) has only this screen to say so.
     const showsError = request.nextUrl.searchParams.has('error');
     if (hasSession && !showsError) return NextResponse.redirect(new URL('/', request.url));
-    return NextResponse.next();
+    return authPageResponse(request);
   }
 
   if (!hasSession) {

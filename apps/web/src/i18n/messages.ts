@@ -35,9 +35,8 @@ import workItems from '../../messages/en/workItems.json';
 import { cloudMessages, loadCloudMessages } from '@/cloud';
 import { DEFAULT_LOCALE, type Locale } from './locales';
 
-// English is static: it is the fallback for every other language and the shape the
-// `t('…')` keys are typed against. The hosted build's English is merged in, so its keys
-// are typed too.
+// The default catalog is static: it is the fallback for every other language and
+// the shape the `t('…')` keys are typed against. Hosted keys are merged into it.
 const coreMessages = {
   meta,
   auth,

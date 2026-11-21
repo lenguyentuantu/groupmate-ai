@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import {
   db,
   documentAsset,
@@ -7,7 +8,9 @@ import {
   projectDocument,
   projectDocumentPreference,
   projectDocumentRevision,
+  projectFile,
   projectMember,
+  user,
 } from '@repo/db';
 import {
   getTableColumns,
@@ -132,6 +135,15 @@ export interface DocumentAssetRow {
   createdAt: string;
 }
 
+export interface ProjectFileRow {
+  publicId: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedBy: { id: string | null; name: string };
+  createdAt: string;
+}
+
 function documentAccess(userId: string) {
   return or(eq(projectDocument.isPrivate, false), eq(projectDocument.ownerUserId, userId));
 }
@@ -188,6 +200,92 @@ function mapRevision(row: typeof projectDocumentRevision.$inferSelect): Document
 
 function mapAsset(row: typeof documentAsset.$inferSelect): DocumentAssetRow {
   return { ...row, createdAt: iso(row.createdAt) };
+}
+
+function mapProjectFile(row: typeof projectFile.$inferSelect): ProjectFileRow {
+  return {
+    publicId: row.publicId,
+    filename: row.filename,
+    contentType: row.contentType,
+    sizeBytes: row.sizeBytes,
+    uploadedBy: { id: row.uploadedByUserId, name: row.uploadedByName },
+    createdAt: iso(row.createdAt),
+  };
+}
+
+export async function listProjectFiles(projectId: number): Promise<ProjectFileRow[]> {
+  const rows = await db
+    .select()
+    .from(projectFile)
+    .where(eq(projectFile.projectId, projectId))
+    .orderBy(desc(projectFile.createdAt), desc(projectFile.id));
+  return rows.map(mapProjectFile);
+}
+
+export async function storeProjectFile(input: {
+  projectId: number;
+  userId: string;
+  filename: string;
+  contentType: string;
+  bytes: Buffer;
+}): Promise<ProjectFileRow> {
+  const { projectId, userId, filename, contentType, bytes } = input;
+  await assertAttachmentUploadAllowed(projectId, bytes.length, contentType);
+  const contentSha256 = createHash('sha256').update(bytes).digest('hex');
+  const [duplicate] = await db
+    .select({ id: projectFile.id })
+    .from(projectFile)
+    .where(and(eq(projectFile.projectId, projectId), eq(projectFile.contentSha256, contentSha256)));
+  if (duplicate) throw new HttpError(409, 'This file has already been uploaded to the project');
+
+  const key = attachmentObjectKey(projectId, 'documents', null, filename);
+  await storeAttachmentObject(key, bytes, contentType);
+  try {
+    return await db.transaction(async (tx) => {
+      await lockAttachmentStorage(tx, projectId);
+      const [existing] = await tx
+        .select({ id: projectFile.id })
+        .from(projectFile)
+        .where(
+          and(eq(projectFile.projectId, projectId), eq(projectFile.contentSha256, contentSha256)),
+        );
+      if (existing) throw new HttpError(409, 'This file has already been uploaded to the project');
+      await assertAttachmentStorageCapacity(projectId, bytes.length, 0, tx);
+      const [actor] = await tx
+        .select({ name: user.name, email: user.email })
+        .from(user)
+        .where(eq(user.id, userId));
+      if (!actor) throw new HttpError(404, 'User not found');
+      const [created] = await tx
+        .insert(projectFile)
+        .values({
+          projectId,
+          uploadedByUserId: userId,
+          uploadedByName: actor.name || actor.email,
+          s3Key: key,
+          filename,
+          contentType,
+          sizeBytes: bytes.length,
+          contentSha256,
+        })
+        .returning();
+      return mapProjectFile(created!);
+    });
+  } catch (error) {
+    await deleteAttachmentObject(key);
+    throw error;
+  }
+}
+
+export async function getProjectFile(
+  projectId: number,
+  publicId: string,
+): Promise<(ProjectFileRow & { s3Key: string }) | null> {
+  const [row] = await db
+    .select()
+    .from(projectFile)
+    .where(and(eq(projectFile.projectId, projectId), eq(projectFile.publicId, publicId)));
+  return row ? { ...mapProjectFile(row), s3Key: row.s3Key } : null;
 }
 
 // The URL of a document asset. It is stored in the document body, so it names the

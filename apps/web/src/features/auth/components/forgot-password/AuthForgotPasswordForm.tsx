@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
@@ -11,6 +12,7 @@ import AuthMessagePanel from '../AuthMessagePanel';
 import AuthRegisterProviders from '../AuthRegisterProviders';
 import {
   sendPasswordResetEmail,
+  safeAuthReturnTo,
   signInWithGoogle,
   signInWithOidc,
 } from '../../services/auth.service';
@@ -21,7 +23,9 @@ import { useAuthConfig } from '@/services/authConfig.service';
 // an account exists, so this screen never tells the visitor which it was.
 export default function AuthForgotPasswordForm() {
   const t = useTranslations('auth');
-  const [email, setEmail] = useState('');
+  const params = useSearchParams();
+  const returnTo = safeAuthReturnTo(params.get('returnTo'));
+  const [email, setEmail] = useState(params.get('email') ?? '');
   const [sent, setSent] = useState(false);
   const { error, pending, run } = useAuthAction();
   // The api mails no reset link while the password form is off: the identity provider
@@ -32,7 +36,7 @@ export default function AuthForgotPasswordForm() {
     event.preventDefault();
     run(
       async () => {
-        await sendPasswordResetEmail(email);
+        await sendPasswordResetEmail(email, returnTo);
         setSent(true);
       },
       { redirect: false },
@@ -45,7 +49,7 @@ export default function AuthForgotPasswordForm() {
         title={t('forgotPassword.sentTitle')}
         description={t('forgotPassword.sentDescription', { email })}
         footer={
-          <Link href="/login" className="underline underline-offset-4">
+          <Link href={returnTo ?? '/login'} className="underline underline-offset-4">
             {t('forgotPassword.backToSignIn')}
           </Link>
         }
@@ -64,15 +68,15 @@ export default function AuthForgotPasswordForm() {
 
           <AuthRegisterProviders
             pending={pending}
-            onOidc={() => run(signInWithOidc, { redirect: false })}
-            onGoogle={() => run(signInWithGoogle, { redirect: false })}
+            onOidc={() => run(() => signInWithOidc(returnTo), { redirect: false })}
+            onGoogle={() => run(() => signInWithGoogle(returnTo), { redirect: false })}
           />
 
           {error && <FieldError>{error}</FieldError>}
 
           <FieldDescription className="text-center">
             {t('forgotPassword.remembered')}{' '}
-            <Link href="/login" className="underline underline-offset-4">
+            <Link href={returnTo ?? '/login'} className="underline underline-offset-4">
               {t('forgotPassword.signIn')}
             </Link>
           </FieldDescription>
@@ -113,7 +117,7 @@ export default function AuthForgotPasswordForm() {
 
         <FieldDescription className="text-center">
           {t('forgotPassword.remembered')}{' '}
-          <Link href="/login" className="underline underline-offset-4">
+          <Link href={returnTo ?? '/login'} className="underline underline-offset-4">
             {t('forgotPassword.signIn')}
           </Link>
         </FieldDescription>

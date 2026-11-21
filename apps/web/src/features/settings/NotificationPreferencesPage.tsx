@@ -10,6 +10,7 @@ import NotificationPreferences from './components/notifications/NotificationPref
 import { useNotificationPreferencesQuery } from './services/settings.service';
 import { useNotificationPreferencesForm } from './hooks/useNotificationPreferencesForm';
 import { useTranslations } from 'next-intl';
+import NotificationLifecycleAutomation from './components/notifications/NotificationLifecycleAutomation';
 
 // The member's own notification preferences (/:team/:projectKey/notifications).
 // A main-nav Configuration destination, open to any member: choose which issue events
@@ -54,7 +55,10 @@ function PreferencesLoaded({ projectKey, initial }: { projectKey: string; initia
         </Button>
       }
     >
-      <NotificationPreferences form={form} />
+      <div className="flex flex-col gap-10">
+        <NotificationPreferences form={form} />
+        <NotificationLifecycleAutomation projectKey={projectKey} />
+      </div>
     </Chrome>
   );
 }

@@ -6,7 +6,7 @@ import { AfterSignIn } from '@/cloud';
 import { Providers } from '@/components/providers';
 import RuntimeEnvScript from '@/components/runtime-env-script';
 import WhatsNew from '@/features/whats-new/WhatsNew';
-import { localeDirection, type Locale } from '@/i18n/locales';
+import { DEFAULT_LOCALE, localeDirection, type Locale } from '@/i18n/locales';
 import { APP_NAME } from '@/utils/app';
 import './globals.css';
 
@@ -23,8 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
 // installed app matches the page.
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-    { media: '(prefers-color-scheme: dark)', color: '#131313' },
+    { media: '(prefers-color-scheme: light)', color: '#f0eee9' },
+    { media: '(prefers-color-scheme: dark)', color: '#302725' },
   ],
 };
 
@@ -34,9 +34,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
+  const documentLanguage = locale === DEFAULT_LOCALE ? 'vi' : locale;
 
   return (
-    <html lang={locale} dir={localeDirection(locale as Locale)} suppressHydrationWarning>
+    <html lang={documentLanguage} dir={localeDirection(locale as Locale)} suppressHydrationWarning>
       <body className="antialiased">
         <RuntimeEnvScript />
         <ThemeProvider

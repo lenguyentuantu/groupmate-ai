@@ -52,6 +52,7 @@ export const BoardColumn = memo(function BoardColumn({
   boardIssues,
   canCreate,
   canEdit,
+  fixedPresentation = false,
   readOnly,
 }: {
   project: ProjectDetail;
@@ -83,10 +84,12 @@ export const BoardColumn = memo(function BoardColumn({
   // which changes on every Shell render, and the column would render with it.
   canCreate: boolean;
   canEdit: boolean;
+  fixedPresentation?: boolean;
   readOnly?: boolean;
 }) {
   const t = useTranslations('workItems');
-  const canCreateIssue = canCreate && !readOnly;
+  const hasDestination = group.assign !== null;
+  const canCreateIssue = canCreate && !readOnly && hasDestination;
   const scrollRef = useRef<HTMLDivElement>(null);
   // A column with a full hard limit accepts no card from another column. It is not
   // a drop target during such a drag. Cards already in the column still reorder
@@ -98,7 +101,7 @@ export const BoardColumn = memo(function BoardColumn({
   const columnId = `col:${group.key}`;
   const { setNodeRef: dropRef, isOver } = useDroppable({
     id: columnId,
-    disabled: closed,
+    disabled: closed || !hasDestination,
     data: { onDrop: (ids: number[]) => onMoveIssue(ids, group, issues.length) },
   });
   const mergedRef = useCallback(
@@ -125,14 +128,14 @@ export const BoardColumn = memo(function BoardColumn({
   return (
     <div
       className={cn(
-        'group/column flex h-full shrink-0 flex-col rounded-md bg-kanban-column px-3 py-2',
+        'group/column flex h-full shrink-0 flex-col rounded-xl border border-border/60 bg-kanban-column px-3 py-3 shadow-xs',
         pinned && PINNED_COLUMN,
         wip?.full && WIP_FULL_TINT[wipFullColor(wip)],
       )}
       style={{ width: COLUMN_WIDTH }}
     >
-      <div className="mb-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+      <div className="mb-3 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
           <GroupDot group={group} />
           {group.name}
           <WipCount filteredCount={issues.length} wip={wip} filtered={filtered} />
@@ -141,48 +144,52 @@ export const BoardColumn = memo(function BoardColumn({
           {!readOnly && (
             <>
               <SelectAllToggle ids={issues.map((i) => i.id)} />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="hidden size-6 text-muted-foreground md:inline-flex"
-                    onClick={() => onTogglePin(group)}
-                    aria-label={pinned ? t('unpin') : t('pin')}
-                  >
-                    {pinned ? <PinOff /> : <Pin />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{pinned ? t('unpin') : t('pin')}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-6 text-muted-foreground"
-                    onClick={() => onCollapse(group)}
-                    aria-label={t('collapse')}
-                  >
-                    <ChevronsRightLeft />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('collapse')}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-6 text-muted-foreground"
-                    onClick={() => onHide(group)}
-                    aria-label={t('hide')}
-                  >
-                    <EyeOff />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('hide')}</TooltipContent>
-              </Tooltip>
+              {!fixedPresentation && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hidden size-6 text-muted-foreground md:inline-flex"
+                        onClick={() => onTogglePin(group)}
+                        aria-label={pinned ? t('unpin') : t('pin')}
+                      >
+                        {pinned ? <PinOff /> : <Pin />}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{pinned ? t('unpin') : t('pin')}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 text-muted-foreground"
+                        onClick={() => onCollapse(group)}
+                        aria-label={t('collapse')}
+                      >
+                        <ChevronsRightLeft />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('collapse')}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 text-muted-foreground"
+                        onClick={() => onHide(group)}
+                        aria-label={t('hide')}
+                      >
+                        <EyeOff />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('hide')}</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
             </>
           )}
           {canCreateIssue && (
@@ -213,7 +220,11 @@ export const BoardColumn = memo(function BoardColumn({
       >
         <div
           style={{
-            height: cardsHeight + (canCreateIssue ? ADD_BUTTON_GAP + ADD_BUTTON_HEIGHT : 0),
+            height: Math.max(
+              cardsHeight +
+                (canCreateIssue && issues.length > 0 ? ADD_BUTTON_GAP + ADD_BUTTON_HEIGHT : 0),
+              issues.length === 0 ? 96 : 0,
+            ),
             position: 'relative',
             width: '100%',
           }}
@@ -235,7 +246,7 @@ export const BoardColumn = memo(function BoardColumn({
               >
                 <CardDropSlot
                   issueId={issue.id}
-                  disabled={!manualOrder || closed}
+                  disabled={!manualOrder || closed || !hasDestination}
                   onDrop={(ids) => onMoveIssue(ids, group, vi.index)}
                 >
                   <BoardCard
@@ -251,10 +262,15 @@ export const BoardColumn = memo(function BoardColumn({
               </div>
             );
           })}
+          {issues.length === 0 && (
+            <div className="absolute inset-x-2 top-3 rounded-lg border border-dashed border-border/70 px-3 py-5 text-center text-xs leading-5 text-muted-foreground">
+              {t('emptyColumn')}
+            </div>
+          )}
           {isOver && manualOrder && issues.length > 0 && (
             <DropLine style={{ top: cardsHeight + 3 }} />
           )}
-          {canCreateIssue && (
+          {canCreateIssue && issues.length > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

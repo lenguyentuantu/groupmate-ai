@@ -1,5 +1,5 @@
 {
-  "title": "Display",
+  "title": "Hiển thị",
   "layouts": {
     "kanban": "Kanban",
     "table": "Table",
@@ -48,11 +48,11 @@
     "statusAge": "Time in status"
   },
   "stateTypes": {
-    "backlog": "Backlog",
-    "unstarted": "Unstarted",
-    "started": "Started",
-    "completed": "Completed",
-    "canceled": "Canceled"
+    "backlog": "Chưa lên kế hoạch",
+    "unstarted": "Chưa bắt đầu",
+    "started": "Đang làm",
+    "completed": "Hoàn thành",
+    "canceled": "Đã hủy"
   },
   "timelineScales": {
     "week": "Week",

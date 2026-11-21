@@ -5,7 +5,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useLaunchPreview, useLaunchReceipt } from '@/services/planning.service';
 import PlanningLaunchApproval from './PlanningLaunchApproval';
-import PlanningLaunchBaseline from './PlanningLaunchBaseline';
 import PlanningLaunchReceipt from './PlanningLaunchReceipt';
 import PlanningLaunchSummary from './PlanningLaunchSummary';
 
@@ -53,7 +52,6 @@ export default function PlanningLaunch({
   return (
     <div className="space-y-4">
       <PlanningLaunchSummary preview={preview.data} />
-      <PlanningLaunchBaseline preview={preview.data} />
       <PlanningLaunchApproval
         key={approvalKey}
         projectRef={projectRef}

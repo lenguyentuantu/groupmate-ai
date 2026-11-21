@@ -1,72 +1,58 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import type { Plan, PlanSource } from '@/lib/api/endpoints/planning';
+import PlanningSourceInspector from './PlanningSourceInspector';
+import PlanningWbsSummary from './PlanningWbsSummary';
+import PlanningWbsTree from './PlanningWbsTree';
 
 export default function PlanningReview({ plan, sources }: { plan: Plan; sources: PlanSource[] }) {
   const t = useTranslations('documents.planning');
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">{plan.title}</h2>
-      <p className="whitespace-pre-wrap" dir="auto">
-        {plan.brief}
-      </p>
-      <p>
-        {t('deadline')}: {plan.deadline || t('unknown')}
-      </p>
-      {(['objectives', 'assumptions', 'questions'] as const).map((key) => (
-        <section key={key}>
-          <h3 className="font-semibold">{t(key)}</h3>
-          <ul>
-            {plan[key].map((text, i) => (
-              <li key={i} dir="auto">
-                {text}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-      {plan.tasks.map((task) => (
-        <details key={task.id} className="rounded border p-3">
-          <summary>
-            {task.title} · {task.id}
-          </summary>
-          <dl>
-            {Object.entries(task)
-              .filter(([key]) => key !== 'id' && key !== 'title')
-              .map(([key, value]) => (
-                <div key={key}>
-                  <dt className="font-medium">
-                    {t(
-                      key === 'parentId'
-                        ? 'parent'
-                        : key === 'estimateMinutes'
-                          ? 'estimate'
-                          : (key as 'description'),
-                    )}
-                  </dt>
-                  <dd className="whitespace-pre-wrap" dir="auto">
-                    {Array.isArray(value) ? value.join('\n') : (value ?? t('unknown'))}
-                  </dd>
-                </div>
-              ))}
-          </dl>
-        </details>
-      ))}
-      <h3 className="font-semibold">{t('sources')}</h3>
-      <p className="text-xs text-muted-foreground">{t('sourceHelp')}</p>
-      {sources.map((source) => (
-        <details key={source.attachmentId}>
-          <summary>{source.filename}</summary>
-          {source.blocks.map((block) => (
-            <div className="my-3" key={block.ref}>
-              <code>{block.ref}</code>
-              <p className="whitespace-pre-wrap" dir="auto">
-                {block.text}
-              </p>
-            </div>
-          ))}
-        </details>
-      ))}
+    <div className="space-y-5">
+      <div>
+        <h2 className="font-heading text-xl font-semibold" dir="auto">
+          {plan.title}
+        </h2>
+      </div>
+      <PlanningWbsSummary tasks={plan.tasks} />
+      <PlanningWbsTree tasks={plan.tasks} sources={sources} />
+      <details className="rounded-xl border bg-card px-4 py-3">
+        <summary className="cursor-pointer font-medium">{t('workflow.sources')}</summary>
+        <div className="mt-4 space-y-4">
+          {plan.brief && (
+            <p className="text-sm leading-6 whitespace-pre-wrap" dir="auto">
+              {plan.brief}
+            </p>
+          )}
+          {plan.deadline && (
+            <p className="text-sm text-muted-foreground">
+              {t('deadline')}: {plan.deadline}
+            </p>
+          )}
+          {(['objectives', 'assumptions', 'questions'] as const).map(
+            (key) =>
+              plan[key].length > 0 && (
+                <section key={key}>
+                  <h3 className="text-sm font-semibold">{t(key)}</h3>
+                  <ul className="mt-1 list-disc space-y-1 ps-5 text-sm text-muted-foreground">
+                    {plan[key].map((text, index) => (
+                      <li key={`${key}-${index}`} dir="auto">
+                        {text}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ),
+          )}
+        </div>
+      </details>
+      <section className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold">{t('sourceEvidence')}</h3>
+          <p className="mt-1 text-xs text-muted-foreground">{t('sourceHelp')}</p>
+        </div>
+        <PlanningSourceInspector sources={sources} />
+      </section>
     </div>
   );
 }

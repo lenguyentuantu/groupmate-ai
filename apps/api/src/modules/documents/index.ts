@@ -33,6 +33,8 @@ import {
   DocumentAssetListResponse,
   DocumentAssetResponse,
   DocumentPreferenceResponse,
+  ProjectFileListResponse,
+  ProjectFileResponse,
   DocumentInitiativeLinkListResponse,
   DocumentIssueLinkListResponse,
   DocumentIssueLinkResponse,
@@ -43,6 +45,7 @@ import {
   DocumentRevisionResponse,
   DocumentSummaryListResponse,
   documentVersionBody,
+  projectFileParams,
   documentIssueParams,
   duplicateDocumentBody,
   issueDocumentsParams,
@@ -67,19 +70,23 @@ import {
   getDocument,
   getDocumentAsset,
   getDocumentRevision,
+  getProjectFile,
   listDocumentRevisions,
   listDocumentAssets,
   listDocuments,
+  listProjectFiles,
   restoreDocument,
   restoreDocumentRevision,
   setDocumentAccess,
   setDocumentLocked,
   setDocumentPreference,
   storeDocumentAsset,
+  storeProjectFile,
   transferDocumentOwnership,
   updateDocument,
   type DocumentAssetRow,
   documentAssetPath,
+  type ProjectFileRow,
 } from './service';
 import {
   addDocumentInitiativeLink,
@@ -111,6 +118,19 @@ function documentAssetDto(
   };
 }
 
+function projectFileDto(project: { teamId: number; key: string }, file: ProjectFileRow) {
+  const ref = encodeURIComponent(`${project.teamId}.${project.key}`);
+  return {
+    id: file.publicId,
+    filename: file.filename,
+    contentType: file.contentType,
+    sizeBytes: file.sizeBytes,
+    uploadedBy: file.uploadedBy,
+    createdAt: file.createdAt,
+    url: `/projects/${ref}/shared-files/${file.publicId}/raw`,
+  };
+}
+
 const OWNER_ONLY = 'Only the page owner can do this, or a project owner on a public page.';
 const EMBED_HINT =
   'It does not appear in the page by itself: add `embedUrl` from the result to the page text, as ![name](embedUrl) for an image or [name](embedUrl) for a file.';
@@ -126,6 +146,65 @@ export const documentRoutes = new Elysia({
   .use(authContext)
   .use(guards)
   .use(documentCollaborationRoutes)
+  .get(
+    '/projects/:projectKey/shared-files',
+    async ({ project }) =>
+      (await listProjectFiles(project.id)).map((file) => projectFileDto(project, file)),
+    {
+      permission: ['documents', 'read'],
+      feature: 'documents',
+      response: { 200: ProjectFileListResponse, ...commonErrors },
+      detail: { summary: 'List shared project files' },
+    },
+  )
+  .post(
+    '/projects/:projectKey/shared-files',
+    async ({ project, body, user, set }) => {
+      const file = body.file;
+      if (!(file instanceof File) || file.size === 0) throw new HttpError(400, 'File is empty');
+      const stored = await storeProjectFile({
+        projectId: project.id,
+        userId: requireUser(user).id,
+        filename: safeAttachmentFilename(file.name),
+        contentType: file.type || 'application/octet-stream',
+        bytes: Buffer.from(await file.arrayBuffer()),
+      });
+      set.status = 201;
+      return projectFileDto(project, stored);
+    },
+    {
+      permission: ['documents', 'edit'],
+      feature: 'documents',
+      body: uploadDocumentAssetBody,
+      response: { 201: ProjectFileResponse, ...commonErrors, ...errors(409, 413, 502) },
+      detail: {
+        summary: 'Upload a shared project file',
+        description: 'Instance MIME, file-size and project-quota limits apply.',
+      },
+    },
+  )
+  .get(
+    '/projects/:projectKey/shared-files/:publicId/raw',
+    async ({ project, params, query, request }) => {
+      const file = await getProjectFile(project.id, params.publicId);
+      if (!file) throw new HttpError(404, 'File not found');
+      return attachmentObjectResponse({
+        s3Key: file.s3Key,
+        contentType: file.contentType,
+        filename: file.filename,
+        request,
+        download: query.download != null,
+      });
+    },
+    {
+      permission: ['documents', 'read'],
+      feature: 'documents',
+      params: projectFileParams,
+      query: rawAttachmentQuery,
+      response: { ...commonErrors, ...errors(502) },
+      detail: { summary: 'Open or download a shared project file' },
+    },
+  )
   .get(
     '/projects/:projectKey/documents',
     async ({ project, query, user }) =>

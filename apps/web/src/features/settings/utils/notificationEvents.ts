@@ -8,6 +8,9 @@ export const NOTIFICATION_EVENTS: (keyof NotificationEventToggles)[] = [
   'mentioned',
   'commented',
   'state_changed',
+  'ready',
+  'reminder',
+  'escalation',
   'monitoring',
 ];
 
@@ -17,6 +20,9 @@ export function eventsEqual(a: NotificationEventToggles, b: NotificationEventTog
     a.mentioned === b.mentioned &&
     a.commented === b.commented &&
     a.state_changed === b.state_changed &&
+    a.ready === b.ready &&
+    a.reminder === b.reminder &&
+    a.escalation === b.escalation &&
     a.monitoring === b.monitoring
   );
 }

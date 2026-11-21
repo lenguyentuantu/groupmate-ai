@@ -1,5 +1,5 @@
-import NotificationPreferencesPage from '@/features/settings/NotificationPreferencesPage';
+import NotificationCenterPage from './NotificationCenterPage';
 
 export default function Page() {
-  return <NotificationPreferencesPage />;
+  return <NotificationCenterPage />;
 }

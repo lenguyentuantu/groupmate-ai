@@ -27,6 +27,7 @@ import CommandLayer from '@/components/layout/CommandLayer';
 import ShellBody from '@/components/layout/ShellBody';
 import ShellHeaderTitle from '@/components/layout/ShellHeaderTitle';
 import ShellOverlays from '@/components/layout/ShellOverlays';
+import NotificationToastListener from '@/components/notifications/NotificationToastListener';
 import { ChatPanel } from '@/features/ai-chat/components/panel/ChatPanel';
 import { useChatPanel } from '@/features/ai-chat/hooks/useChatPanel';
 import { useTranslations } from 'next-intl';
@@ -180,6 +181,7 @@ export default function Shell({
 
   return (
     <ShellCtx.Provider value={context}>
+      <NotificationToastListener projects={projects} />
       <IssueOpenerCtx.Provider value={openIssue}>
         <SidebarProvider defaultOpen={defaultSidebarOpen} className="h-svh overflow-hidden">
           <AppSidebar

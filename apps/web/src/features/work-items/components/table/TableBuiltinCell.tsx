@@ -122,7 +122,9 @@ export function TableBuiltinCell({
     case 'estimateTime':
       return (
         <div className="text-xs text-muted-foreground">
-          {issue.estimateMinutes == null ? DASH : formatMinutes(issue.estimateMinutes)}
+          {issue.estimateMinutes == null
+            ? DASH
+            : `Ước tính: ${formatMinutes(issue.estimateMinutes)}`}
         </div>
       );
     case 'startDate':

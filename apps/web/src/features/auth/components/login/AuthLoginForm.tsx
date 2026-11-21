@@ -21,6 +21,7 @@ import {
   EmailNotConfirmedError,
   isEmailAddress,
   resendVerificationEmail,
+  safeAuthReturnTo,
   sendMagicLink,
   signInWithPassword,
   signInWithGoogle,
@@ -59,6 +60,7 @@ export default function AuthLoginForm({ title }: { title?: string }) {
   const passwordEnabled = authConfig?.emailPassword !== false;
   const params = useSearchParams();
   const justReset = params.get('reset') === '1';
+  const returnTo = safeAuthReturnTo(params.get('returnTo'));
   // `apiFailure` in lib/api/core/client.ts sends the browser here with ?expired=1 after the API
   // refused the session, so the screen can say why the user is back on it.
   const sessionExpired = params.get('expired') === '1';
@@ -90,21 +92,24 @@ export default function AuthLoginForm({ title }: { title?: string }) {
     if (method === 'link') {
       run(
         async () => {
-          await sendMagicLink(identifier);
+          await sendMagicLink(identifier, returnTo);
           setLinkSentTo(identifier);
         },
         { redirect: false },
       );
       return;
     }
-    run(async () => {
-      try {
-        await signInWithPassword({ identifier, password });
-      } catch (err) {
-        if (err instanceof EmailNotConfirmedError) setUnconfirmed(true);
-        throw err;
-      }
-    });
+    run(
+      async () => {
+        try {
+          await signInWithPassword({ identifier, password });
+        } catch (err) {
+          if (err instanceof EmailNotConfirmedError) setUnconfirmed(true);
+          throw err;
+        }
+      },
+      { redirectTo: returnTo },
+    );
   }
 
   if (linkSentTo) {
@@ -155,6 +160,11 @@ export default function AuthLoginForm({ title }: { title?: string }) {
             identifier={identifier}
             password={password}
             pending={pending}
+            forgotPasswordHref={
+              returnTo
+                ? `/forgot-password?returnTo=${encodeURIComponent(returnTo)}`
+                : '/forgot-password'
+            }
             onIdentifierChange={setIdentifier}
             onPasswordChange={setPassword}
           />
@@ -195,9 +205,11 @@ export default function AuthLoginForm({ title }: { title?: string }) {
           signingInWithLink={signingInWithLink}
           pending={pending}
           onToggleMethod={() => switchTo(signingInWithLink ? 'password' : 'link')}
-          onOidc={() => run(signInWithOidc, { redirect: false })}
-          onGoogle={() => run(signInWithGoogle, { redirect: false })}
-          onPasskey={() => run(signInWithPasskey, { fallback: t('errors.passkey') })}
+          onOidc={() => run(() => signInWithOidc(returnTo), { redirect: false })}
+          onGoogle={() => run(() => signInWithGoogle(returnTo), { redirect: false })}
+          onPasskey={() =>
+            run(signInWithPasskey, { redirectTo: returnTo, fallback: t('errors.passkey') })
+          }
         />
 
         {/* Only when anyone can register with a password. An invite-only instance

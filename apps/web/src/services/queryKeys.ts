@@ -92,6 +92,7 @@ export const qk = {
   autoArchive: (projectKey: string) => ['autoArchive', projectKey] as const,
   subtaskAutomation: (projectKey: string) => ['subtaskAutomation', projectKey] as const,
   monitoringSettings: (projectKey: string) => ['monitoringSettings', projectKey] as const,
+  taskLifecycleSettings: (projectKey: string) => ['taskLifecycleSettings', projectKey] as const,
   // The project's repository integration settings (the Repositories settings section).
   gitSettings: (projectKey: string) => ['gitSettings', projectKey] as const,
   gitConnections: (projectKey: string) => ['gitConnections', projectKey] as const,
@@ -320,6 +321,9 @@ export const qk = {
   anyCycles: ['cycles'] as const,
   anyCycle: ['cycle'] as const,
   attachments: (id: number) => ['attachments', id] as const,
+  deliverable: (id: number) => ['issue', id, 'deliverable'] as const,
+  projectDeliverables: (projectKey: string) => ['projectDeliverables', projectKey] as const,
+  projectFiles: (projectKey: string) => ['projectFiles', projectKey] as const,
   initiativeAttachments: (id: number) => ['initiativeAttachments', id] as const,
   // The time entries of one issue. Their sum comes with the issue, so a write
   // refreshes that read too.
@@ -329,6 +333,7 @@ export const qk = {
   notifications: (projectKey: string, filters?: unknown) =>
     ['notifications', projectKey, filters ?? {}] as const,
   notificationsUnread: (projectKey: string) => ['notificationsUnread', projectKey] as const,
+  notificationToasts: ['notificationToasts'] as const,
   // The unread count across every project (the app icon badge).
   notificationsUnreadTotal: ['notificationsUnreadTotal'] as const,
   // The signed-in user's WebAuthn passkeys (account security page).

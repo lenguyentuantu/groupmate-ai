@@ -9,8 +9,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: 'InterVariable', sans-serif;
+  --font-heading: 'InterVariable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'InterVariable', 'Segoe UI', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -72,61 +72,60 @@
   --text-4xl--letter-spacing: -0.025em;
 }
 
-/* Grayscale ramps with no hue, and the page never sits on pure white or pure black.
-   Text pairs are measured with APCA, not eyeballed: see DESIGN.md for the thresholds. */
+/* GroupMate uses warm neutral surfaces with Marsala for primary actions and focus. */
 :root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.18 0 0);
-  --card: oklch(0.998 0 0);
-  --card-foreground: oklch(0.18 0 0);
-  --popover: oklch(0.998 0 0);
-  --popover-foreground: oklch(0.18 0 0);
-  --primary: oklch(0.22 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.22 0 0);
-  --muted: oklch(0.965 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.955 0 0);
-  --accent-foreground: oklch(0.22 0 0);
+  --background: #f0eee9;
+  --foreground: #302725;
+  --card: #ffffff;
+  --card-foreground: #302725;
+  --popover: #ffffff;
+  --popover-foreground: #302725;
+  --primary: #955251;
+  --primary-foreground: #ffffff;
+  --secondary: #decdbe;
+  --secondary-foreground: #302725;
+  --muted: color-mix(in oklab, #decdbe 52%, #f0eee9);
+  --muted-foreground: color-mix(in oklab, #302725 68%, #f0eee9);
+  --accent: #a47864;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.505 0.21 27);
   --destructive-text: var(--destructive);
   --warning: oklch(0.52 0.11 72);
-  --border: oklch(0.905 0 0);
-  --input: oklch(0.88 0 0);
-  --ring: oklch(0.62 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.972 0 0);
-  --sidebar-foreground: oklch(0.18 0 0);
-  --sidebar-primary: oklch(0.22 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
-  --sidebar-accent-foreground: oklch(0.22 0 0);
-  --sidebar-border: oklch(0.905 0 0);
-  --sidebar-ring: oklch(0.62 0 0);
+  --border: #decdbe;
+  --input: color-mix(in oklab, #decdbe 82%, #ffffff);
+  --ring: #955251;
+  --chart-1: #955251;
+  --chart-2: #a47864;
+  --chart-3: #decdbe;
+  --chart-4: #6f4b44;
+  --chart-5: #302725;
+  --radius: 0.75rem;
+  --sidebar: color-mix(in oklab, #f0eee9 82%, #ffffff);
+  --sidebar-foreground: #302725;
+  --sidebar-primary: #955251;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #decdbe;
+  --sidebar-accent-foreground: #302725;
+  --sidebar-border: #decdbe;
+  --sidebar-ring: #955251;
   --priority-low: #6b7280;
   --priority-medium: #eab308;
   --priority-high: #f97316;
   --priority-urgent: #f2683c;
-  --kanban-column: oklch(0.945 0 0);
-  --kanban-column-raised: oklch(0.958 0 0);
+  --kanban-column: color-mix(in oklab, #decdbe 42%, #f0eee9);
+  --kanban-column-raised: color-mix(in oklab, #decdbe 30%, #ffffff);
   /* A state tint keeps the lightness of the surface it replaces, so the cards keep
      their contrast against it; only hue and chroma change. */
   --kanban-column-wip-destructive: oklch(0.94 0.022 18);
   --kanban-column-wip-warning: oklch(0.945 0.03 92);
-  --kanban-card: oklch(0.972 0 0);
-  --kanban-card-hover: oklch(0.995 0 0);
+  --kanban-card: #ffffff;
+  --kanban-card-hover: color-mix(in oklab, #ffffff 92%, #decdbe);
   --kanban-card-blocked: oklch(0.968 0.013 15);
   --kanban-card-blocked-hover: oklch(0.984 0.008 15);
   --row-blocked: oklch(0.978 0.01 15);
   --row-blocked-hover: oklch(0.963 0.014 15);
   --overdue: color-mix(in oklab, var(--destructive) 9%, var(--kanban-card));
-  --kanban-card-selected: oklch(0.925 0.04 265);
+  --kanban-card-selected: color-mix(in oklab, #955251 14%, #ffffff);
   --overlay-shadow: 0 12px 28px -8px rgb(0 0 0 / 0.18), 0 4px 10px -4px rgb(0 0 0 / 0.1);
   --pinned-column-shadow: 0 0 18px 2px rgb(0 0 0 / 0.16);
   /* A panel on a side edge casts to the side, so the glow has no offset. */
@@ -139,55 +138,55 @@
 }
 
 .dark {
-  --background: oklch(0.185 0 0);
-  --foreground: oklch(0.965 0 0);
-  --card: oklch(0.225 0 0);
-  --card-foreground: oklch(0.965 0 0);
-  --popover: oklch(0.24 0 0);
-  --popover-foreground: oklch(0.965 0 0);
-  --primary: oklch(0.93 0 0);
-  --primary-foreground: oklch(0.18 0 0);
-  --secondary: oklch(0.29 0 0);
-  --secondary-foreground: oklch(0.965 0 0);
-  --muted: oklch(0.29 0 0);
-  --muted-foreground: oklch(0.85 0 0);
-  --accent: oklch(0.3 0 0);
-  --accent-foreground: oklch(0.965 0 0);
+  --background: #302725;
+  --foreground: #f0eee9;
+  --card: #3b302d;
+  --card-foreground: #f0eee9;
+  --popover: #423532;
+  --popover-foreground: #f0eee9;
+  --primary: #c68582;
+  --primary-foreground: #302725;
+  --secondary: #58453e;
+  --secondary-foreground: #f0eee9;
+  --muted: #4a3b37;
+  --muted-foreground: #decdbe;
+  --accent: #a47864;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.77 0.18 22);
   --destructive-text: oklch(0.82 0.13 20);
   --warning: oklch(0.82 0.14 80);
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 18%);
-  --ring: oklch(0.62 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.145 0 0);
-  --sidebar-foreground: oklch(0.965 0 0);
-  --sidebar-primary: oklch(0.93 0 0);
-  --sidebar-primary-foreground: oklch(0.18 0 0);
-  --sidebar-accent: oklch(0.24 0 0);
-  --sidebar-accent-foreground: oklch(0.965 0 0);
+  --ring: #c68582;
+  --chart-1: #c68582;
+  --chart-2: #c29a85;
+  --chart-3: #decdbe;
+  --chart-4: #955251;
+  --chart-5: #f0eee9;
+  --sidebar: #281f1e;
+  --sidebar-foreground: #f0eee9;
+  --sidebar-primary: #c68582;
+  --sidebar-primary-foreground: #302725;
+  --sidebar-accent: #4a3b37;
+  --sidebar-accent-foreground: #f0eee9;
   --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.62 0 0);
+  --sidebar-ring: #c68582;
   --priority-low: #9ca3af;
   --priority-medium: #eab308;
   --priority-high: #f97316;
   --priority-urgent: #f2683c;
-  --kanban-column: oklch(0.16 0 0);
-  --kanban-column-raised: oklch(0.19 0 0);
-  --kanban-column-wip-destructive: oklch(0.16 0.028 15);
-  --kanban-column-wip-warning: oklch(0.16 0.016 88);
-  --kanban-card: oklch(0.215 0 0);
-  --kanban-card-hover: oklch(0.25 0 0);
-  --kanban-card-blocked: oklch(0.215 0.03 10);
-  --kanban-card-blocked-hover: oklch(0.25 0.034 10);
-  --row-blocked: oklch(0.2 0.024 10);
-  --row-blocked-hover: oklch(0.235 0.03 10);
+  --kanban-column: #281f1e;
+  --kanban-column-raised: #342927;
+  --kanban-column-wip-destructive: #352322;
+  --kanban-column-wip-warning: #352c22;
+  --kanban-card: #3b302d;
+  --kanban-card-hover: #463936;
+  --kanban-card-blocked: #452e2d;
+  --kanban-card-blocked-hover: #513633;
+  --row-blocked: #3d2928;
+  --row-blocked-hover: #49302e;
   --overdue: color-mix(in oklab, var(--destructive) 12%, var(--kanban-card));
-  --kanban-card-selected: oklch(0.31 0.07 266);
+  --kanban-card-selected: color-mix(in oklab, #955251 42%, #302725);
   --overlay-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.7), 0 6px 16px -6px rgb(0 0 0 / 0.55);
   --pinned-column-shadow: 0 0 20px 4px rgb(0 0 0 / 0.6);
   --side-panel-shadow: 0 0 28px 8px rgb(0 0 0 / 0.65);
@@ -277,8 +276,7 @@
 .row-blocked:hover {
   background-color: var(--row-blocked-hover);
 }
-/* Selected in the board multi-select: a blue-tinted card surface (Linear-style),
-   overriding the base and hover fills. */
+/* Selected cards use a restrained Marsala tint over the card surface. */
 .kanban-card-selected,
 .kanban-card-selected:hover {
   background-color: var(--kanban-card-selected);

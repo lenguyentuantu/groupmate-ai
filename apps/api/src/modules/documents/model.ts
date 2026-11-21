@@ -21,6 +21,11 @@ export const documentAssetParams = t.Object({
   }),
 });
 
+export const projectFileParams = t.Object({
+  projectKey: t.String(),
+  publicId: t.String({ format: 'uuid' }),
+});
+
 const DocumentSummaryResponse = t.Object({
   id: t.Number(),
   projectId: t.Number(),
@@ -231,6 +236,18 @@ export const DocumentAssetResponse = t.Object({
 });
 
 export const DocumentAssetListResponse = t.Array(DocumentAssetResponse);
+
+export const ProjectFileResponse = t.Object({
+  id: t.String({ format: 'uuid' }),
+  filename: t.String(),
+  contentType: t.String(),
+  sizeBytes: t.Number(),
+  uploadedBy: t.Object({ id: t.Nullable(t.String()), name: t.String() }),
+  createdAt: t.String(),
+  url: t.String(),
+});
+
+export const ProjectFileListResponse = t.Array(ProjectFileResponse);
 
 export const ViewDocumentAssetResponse = t.Object({
   images: ViewAttachmentsResponse.properties.images,

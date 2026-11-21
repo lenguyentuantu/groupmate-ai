@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useShellRoute } from '@/hooks/useShellRoute';
@@ -16,9 +16,12 @@ import {
   useCreateDocument,
   useDocumentQuery,
   useDocumentsQuery,
+  useProjectFilesQuery,
+  useUploadProjectFile,
 } from './services/documents.service';
 import DocumentView from './components/DocumentView';
 import DocumentsIndex from './components/DocumentsIndex';
+import ProjectDeliverablesIndex from './components/ProjectDeliverablesIndex';
 import { importedMarkdownJson, markdownTitle } from './utils/documentImport';
 import { documentBelongsToTab, type DocumentListTab } from './utils/documentList';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -33,6 +36,7 @@ export default function DocumentsPage() {
   const params = useParams<{ documentId?: string }>();
   const router = useRouter();
   const t = useTranslations('documents');
+  const [workspaceTab, setWorkspaceTab] = useState<'documents' | 'deliverables'>('documents');
   const { can } = usePermissions();
   const projectKey = useShellRoute().projectKey ?? '';
   const routeId = params.documentId ? Number(params.documentId) : null;
@@ -82,6 +86,8 @@ export default function DocumentsPage() {
     (documentQuery.data.title.trim() || t('untitled'));
   useDocumentTitle(titlePath(project?.project.name, documentTitle));
   const createDocument = useCreateDocument(projectKey);
+  const projectFilesQuery = useProjectFilesQuery(projectKey);
+  const uploadProjectFile = useUploadProjectFile(projectKey);
   const canRead = can('documents', 'read');
   const canCreate = can('documents', 'create');
   const canEdit = can('documents', 'edit');
@@ -152,6 +158,14 @@ export default function DocumentsPage() {
   };
 
   if (documentId === null) {
+    if (workspaceTab === 'deliverables') {
+      return (
+        <ProjectDeliverablesIndex
+          projectKey={projectKey}
+          onShowDocuments={() => setWorkspaceTab('documents')}
+        />
+      );
+    }
     return (
       <DocumentsIndex
         projectKey={projectKey}
@@ -168,11 +182,22 @@ export default function DocumentsPage() {
         )}
         reorderSafe={reorderSafe}
         creating={createDocument.isPending}
+        sharedFiles={projectFilesQuery.data ?? []}
+        sharedFilesLoading={projectFilesQuery.isLoading}
+        sharedFilesFailed={projectFilesQuery.isError}
+        uploadingSharedFile={uploadProjectFile.isPending}
         onSearchChange={setSearch}
         onTabChange={setListTab}
         onCreate={(parentId) => void create(parentId, listTab === 'private')}
         onUpload={(file) => void upload(file)}
+        onUploadSharedFile={(file) =>
+          void uploadProjectFile
+            .mutateAsync(file)
+            .then(() => toast.success(t('sharedFileUploaded')))
+        }
+        onRetrySharedFiles={() => void projectFilesQuery.refetch()}
         onRetry={() => void visibleDocumentsQuery.refetch()}
+        onShowDeliverables={() => setWorkspaceTab('deliverables')}
       />
     );
   }

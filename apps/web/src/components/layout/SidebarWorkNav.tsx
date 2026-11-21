@@ -1,22 +1,11 @@
 import { usePathname } from 'next/navigation';
 import { useShellRoute } from '@/hooks/useShellRoute';
 import { useTranslations } from 'next-intl';
+import { BookOpenText, Inbox, LayoutDashboard, Sparkles, SquareKanban } from 'lucide-react';
 import {
-  BookOpenText,
-  Inbox,
-  LayoutDashboard,
-  RefreshCw,
-  SquareKanban,
-  StickyNote,
-  Target,
-} from 'lucide-react';
-import {
-  cyclesPath,
   dashboardsPath,
   documentsPath,
-  inboxPath,
-  initiativesPath,
-  notesPath,
+  notificationsPath,
   projectPath,
   viewPath,
 } from '@/utils/paths';
@@ -84,20 +73,21 @@ export default function SidebarWorkNav({
     <SidebarGroup>
       <SidebarGroupContent>
         <SidebarMenu>
-          <SidebarNavItem
-            href={projectKey ? inboxPath(projectKey) : '#'}
-            icon={Inbox}
-            label={t('inbox')}
-            active={pathname.endsWith('/inbox')}
-            disabled={disabled}
-            badge={inboxUnread}
-          />
           {features.dashboards && can('dashboards', 'read') && (
             <SidebarNavItem
               href={projectKey ? dashboardsPath(projectKey) : '#'}
               icon={LayoutDashboard}
               label={t('dashboards')}
               active={pathname.includes('/dashboard')}
+              disabled={disabled}
+            />
+          )}
+          {can('documents', 'read') && (
+            <SidebarNavItem
+              href={projectKey ? `${projectPath(projectKey)}/planning` : '#'}
+              icon={Sparkles}
+              label={t('planning')}
+              active={routeSub === 'planning'}
               disabled={disabled}
             />
           )}
@@ -116,24 +106,6 @@ export default function SidebarWorkNav({
               disabled={disabled}
             />
           )}
-          {features.initiatives && can('initiatives', 'read') && (
-            <SidebarNavItem
-              href={projectKey ? initiativesPath(projectKey) : '#'}
-              icon={Target}
-              label={t('initiatives')}
-              active={pathname.includes('/initiatives')}
-              disabled={disabled}
-            />
-          )}
-          {features.cycles && can('cycles', 'read') && (
-            <SidebarNavItem
-              href={projectKey ? cyclesPath(projectKey) : '#'}
-              icon={RefreshCw}
-              label={t('cycles')}
-              active={pathname.includes('/cycles')}
-              disabled={disabled}
-            />
-          )}
           {features.documents && can('documents', 'read') && (
             <SidebarNavItem
               href={projectKey ? documentsPath(projectKey) : '#'}
@@ -143,24 +115,14 @@ export default function SidebarWorkNav({
               disabled={disabled}
             />
           )}
-          {can('documents', 'read') && (
-            <SidebarNavItem
-              href={projectKey ? `${projectPath(projectKey)}/planning` : '#'}
-              icon={Target}
-              label={t('planning')}
-              active={routeSub === 'planning'}
-              disabled={disabled}
-            />
-          )}
-          {features.notes && can('note_boards', 'read') && (
-            <SidebarNavItem
-              href={projectKey ? notesPath(projectKey) : '#'}
-              icon={StickyNote}
-              label={t('notes')}
-              active={pathname.includes('/notes')}
-              disabled={disabled}
-            />
-          )}
+          <SidebarNavItem
+            href={projectKey ? notificationsPath(projectKey) : '#'}
+            icon={Inbox}
+            label={t('inbox')}
+            active={pathname.endsWith('/notifications') || pathname.endsWith('/inbox')}
+            disabled={disabled}
+            badge={inboxUnread}
+          />
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

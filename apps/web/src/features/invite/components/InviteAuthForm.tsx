@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { projectPath, projectRefOf } from '@/utils/paths';
@@ -141,7 +142,17 @@ export default function InviteAuthForm({
 
         {passwordEnabled && (
           <Field>
-            <FieldLabel htmlFor="invite-password">{t('passwordLabel')}</FieldLabel>
+            <div className="flex items-center justify-between">
+              <FieldLabel htmlFor="invite-password">{t('passwordLabel')}</FieldLabel>
+              {!isRegister && (
+                <Link
+                  href={`/forgot-password?email=${encodeURIComponent(email)}&returnTo=${encodeURIComponent(returnTo)}`}
+                  className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+                >
+                  {tLogin('forgotPassword')}
+                </Link>
+              )}
+            </div>
             <Input
               id="invite-password"
               type="password"

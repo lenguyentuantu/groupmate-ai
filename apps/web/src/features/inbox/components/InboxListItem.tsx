@@ -9,6 +9,9 @@ import {
   MessageSquare,
   MoreHorizontal,
   UserRound,
+  BellRing,
+  CircleCheck,
+  TriangleAlert,
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -45,7 +48,16 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   mentioned: AtSign,
   commented: MessageSquare,
   state_changed: CircleDot,
+  ready: CircleCheck,
+  reminder: BellRing,
+  escalation: TriangleAlert,
   monitoring: Activity,
+};
+const EVENT_FALLBACK: Partial<Record<NotificationType, string>> = {
+  ready: 'This task is ready to start',
+  reminder: 'This task is waiting for you to start',
+  escalation: 'This task needs leader attention',
+  monitoring: 'Project monitoring alert',
 };
 
 const dropdownMenu = {
@@ -103,8 +115,8 @@ export default function InboxListItem({
         n.fromState && n.toState
           ? te('stateChanged', { who, from: n.fromState, to: n.toState })
           : te('stateChangedPlain', { who });
-    } else if (n.type === 'monitoring') {
-      eventText = 'Monitoring alert';
+    } else if (['monitoring', 'ready', 'reminder', 'escalation'].includes(n.type)) {
+      eventText = te.has(n.type) ? te(n.type) : (EVENT_FALLBACK[n.type] ?? '');
     } else {
       eventText = te(n.type, { who });
     }

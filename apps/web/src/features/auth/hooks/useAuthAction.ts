@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRefusalMessage } from '@/hooks/useRefusalMessage';
 
-// Runs an auth action while tracking pending + error, and redirects into the
-// planner on success. `setError` is exposed so a form can report client-side
+// Runs an auth action while tracking pending + error, and redirects on success.
+// `setError` is exposed so a form can report client-side
 // validation before calling `run`.
 //
 // Actions that only send an email (reset link, sign-in link, confirmation) end on
@@ -22,7 +22,7 @@ export function useAuthAction() {
 
   async function run(
     action: () => Promise<void>,
-    options?: { redirect?: boolean; fallback?: string },
+    options?: { redirect?: boolean; redirectTo?: string; fallback?: string },
   ) {
     setError(null);
     setPending(true);
@@ -32,7 +32,7 @@ export function useAuthAction() {
         setPending(false);
         return;
       }
-      router.push('/');
+      router.push(options?.redirectTo ?? '/');
       router.refresh();
     } catch (err) {
       setError(refusalMessage(err, options?.fallback));

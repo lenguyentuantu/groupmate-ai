@@ -321,6 +321,8 @@ export function useSendTeamInviteEmail(teamId: number) {
       if (result.emailQueued) toast.success(t('emailQueued'));
       else toast.info(t('resendUnavailable'));
     },
+    onError: () => toast.error(t('resendFailed')),
+    meta: { suppressErrorToast: true },
   });
 }
 

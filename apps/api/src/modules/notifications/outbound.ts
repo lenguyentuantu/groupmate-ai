@@ -69,6 +69,9 @@ const EMAIL_TEMPLATE: Record<NotificationType, CoreEmailKey> = {
   mentioned: 'mentioned',
   commented: 'commented',
   state_changed: 'stateChanged',
+  ready: 'stateChanged',
+  reminder: 'stateChanged',
+  escalation: 'stateChanged',
   monitoring: 'stateChanged',
 };
 
@@ -93,6 +96,9 @@ function telegramPayload(
         ? `Status changed from ${stateChange.from} to ${stateChange.to} by ${actor}`
         : `Status changed by ${actor}`,
     },
+    ready: { emoji: '✅', action: 'Ready to start' },
+    reminder: { emoji: '⏳', action: 'Waiting to start' },
+    escalation: { emoji: '⚠️', action: 'Leader attention required' },
     monitoring: { emoji: '⚠️', action: 'Project monitoring alert' },
   };
   const { emoji, action } = meta[type];
@@ -173,6 +179,22 @@ async function composeMessages(
     commentId != null
       ? commentUrl(ref, projectRow.key, issueRow.seq, commentId)
       : issueUrl(ref, projectRow.key, issueRow.seq);
+  if (['ready', 'reminder', 'escalation'].includes(first.type)) {
+    const message = first.message ?? `${issueKey} requires attention.`;
+    return {
+      email: async () => ({
+        subject: `${issueKey} — ${issueRow.title}`,
+        text: `${message}\n\n${url}`,
+        html: `<p>${escapeHtml(message)}</p><p><a href="${escapeHtml(url)}">Open ${escapeHtml(issueKey)}</a></p>`,
+        url,
+      }),
+      telegram: () => ({
+        text: `${message}\n\n${url}`,
+        html: `<b>${escapeHtml(issueKey)} — ${escapeHtml(issueRow.title)}</b>\n\n${escapeHtml(message)}\n\n<a href="${escapeHtml(url)}">Open task</a>`,
+        url,
+      }),
+    };
+  }
   if (first.type === 'monitoring') {
     const monitoringMessage = first.message ?? 'Project monitoring alert.';
     const message = `${projectRow.name}: ${monitoringMessage}`;

@@ -4,13 +4,19 @@ import type { ProjectDetail } from '@/lib/api/endpoints/projects';
 import type { IssueDetail as IssueDetailRow } from '@/lib/api/endpoints/issues';
 import type { MentionSource } from '@/lib/api/endpoints/mentions';
 import { usePermissions } from '@/hooks/usePermissions';
+import { usePriorityLabel } from '@/hooks/usePriorityLabel';
 import { usePersistedWidth } from '@/hooks/usePersistedWidth';
 import { useProjectFeatures } from '@/hooks/useProjectFeatures';
 import ResizeGrip from '@/components/common/ResizeGrip';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatShortDate } from '@/utils/dates';
+import { formatMinutes } from '@/utils/estimate';
 import { useIssueDetail } from '../../hooks/useIssueDetail';
 import { usePersistedOpen, usePersistedOpenGroups } from '@/hooks/usePersistedOpen';
 import { useFilePaste } from '../../hooks/useFilePaste';
 import IssueAttachmentsPanel from './IssueAttachmentsPanel';
+import IssueDeliverableReviewPanel from './IssueDeliverableReviewPanel';
 import IssueChecklistsPanel from './IssueChecklistsPanel';
 import IssueLinksPanel from './IssueLinksPanel';
 import IssueDevelopmentPanel from './IssueDevelopmentPanel';
@@ -32,6 +38,38 @@ import {
   propertiesWidthKey,
 } from '../../utils/propertiesWidth';
 import { useTranslations } from 'next-intl';
+
+const planningHeadings = [
+  'Deliverable',
+  'Acceptance criteria',
+  'Required skills',
+  'Planning source',
+] as const;
+
+function parsePlanningDescription(description: string) {
+  const pattern = /^## (Deliverable|Acceptance criteria|Required skills|Planning source)\r?$/gm;
+  const matches = [...description.matchAll(pattern)];
+  if (!matches.some((match) => match[1] === 'Planning source')) return null;
+  const sections = new Map<string, string>();
+  matches.forEach((match, index) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = matches[index + 1]?.index ?? description.length;
+    sections.set(match[1], description.slice(start, end).trim());
+  });
+  return {
+    objective: description.slice(0, matches[0]?.index ?? 0).trim(),
+    deliverable: sections.get(planningHeadings[0]) ?? '',
+    acceptanceCriteria: (sections.get(planningHeadings[1]) ?? '')
+      .split('\n')
+      .map((line) => line.replace(/^[-*]\s+/, '').trim())
+      .filter(Boolean),
+    requiredSkills: (sections.get(planningHeadings[2]) ?? '')
+      .split(',')
+      .map((skill) => skill.trim())
+      .filter(Boolean),
+    source: sections.get(planningHeadings[3]) ?? '',
+  };
+}
 
 // The body of a issue — title, description, markdown custom fields, the
 // Properties grid, attachments, and the activity feed. Shared by the side panel
@@ -65,6 +103,9 @@ export default function IssueDetailContent({
   const t = useTranslations('issue');
   const tCommon = useTranslations('common');
   const tEditor = useTranslations('issue.editor');
+  const tFields = useTranslations('issue.fields');
+  const tNoDate = useTranslations('workItems.calendar.noDate');
+  const priorityLabel = usePriorityLabel();
   const direction = Direction.useDirection();
   const {
     issue,
@@ -113,6 +154,33 @@ export default function IssueDetailContent({
 
   if (!issue) return <IssueDetailSkeleton />;
 
+  const column = project.columns.find((candidate) => candidate.id === issue.columnId);
+  const assignee = project.assignees.find((candidate) => candidate.userId === issue.assigneeUserId);
+  const inProgressColumn = project.columns.find((candidate) => candidate.stateType === 'started');
+  const blockers = issue.links.filter((link) => {
+    if (link.kind !== 'blocks' || link.direction !== 'inward') return false;
+    const blockingColumn = project.columns.find(
+      (candidate) => candidate.id === link.issue.columnId,
+    );
+    return blockingColumn?.stateType !== 'completed' && blockingColumn?.stateType !== 'canceled';
+  });
+  const planningDescription = parsePlanningDescription(issue.description);
+  const stage =
+    blockers.length > 0 && (column?.stateType === 'backlog' || column?.stateType === 'unstarted')
+      ? 'Đang bị chặn'
+      : column?.stateType === 'started'
+        ? 'Đang thực hiện'
+        : column?.stateType === 'completed'
+          ? 'Hoàn thành'
+          : column?.stateType === 'canceled'
+            ? column.name
+            : 'Sẵn sàng bắt đầu';
+  const canStart =
+    canEdit &&
+    blockers.length === 0 &&
+    inProgressColumn !== undefined &&
+    (column?.stateType === 'backlog' || column?.stateType === 'unstarted');
+
   const heading = (
     <>
       <div className="flex items-start gap-2">
@@ -151,23 +219,100 @@ export default function IssueDetailContent({
             {issue.title}
           </h1>
         )}
+        {canStart && (
+          <Button
+            type="button"
+            className="shrink-0"
+            onClick={() => patch({ columnId: inProgressColumn.id })}
+          >
+            Bắt đầu làm
+          </Button>
+        )}
       </div>
 
-      {(canEdit || issue.description.trim() !== '') && (
-        <MarkdownEditor
-          className="mt-4"
-          placeholder={tEditor('descriptionPlaceholder')}
-          defaultValue={issue.description}
-          key={`desc-${issue.updatedAt}-${replacements}`}
-          editable={canEdit}
-          onReady={setDescEditor}
-          uploadFile={uploadFile}
-          imageAttachments={imageAttachments}
-          mentions={textMentions}
-          onBlur={(md) => {
-            if (md !== issue.description) patch({ description: md });
-          }}
-        />
+      <dl className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+        <div>
+          <dt className="text-xs text-muted-foreground">{tFields('state')}</dt>
+          <dd className="font-medium">{stage}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">{tFields('assignee')}</dt>
+          <dd className="font-medium" dir="auto">
+            {assignee?.name ?? 'Chưa phân công'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">{tFields('priority')}</dt>
+          <dd className="font-medium">{priorityLabel(issue.priority ?? '')}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">{tFields('dueDate')}</dt>
+          <dd className="font-medium">
+            {issue.dueDate ? formatShortDate(issue.dueDate) : tNoDate('dueDate')}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-muted-foreground">{tFields('estimateTime')}</dt>
+          <dd className="font-medium">
+            {issue.estimateMinutes === null
+              ? 'Chưa ước tính'
+              : formatMinutes(issue.estimateMinutes)}
+          </dd>
+        </div>
+      </dl>
+
+      {blockers.length > 0 && (
+        <p className="mt-4 rounded-lg border border-amber-500/25 bg-amber-500/5 p-3 text-sm">
+          Đang bị chặn bởi{' '}
+          <span className="font-medium" dir="auto">
+            {blockers.map((link) => `${link.issue.identifier} · ${link.issue.title}`).join(', ')}
+          </span>
+          . Hoàn thành công việc chặn trước khi bắt đầu.
+        </p>
+      )}
+
+      {planningDescription ? (
+        <div className="mt-6 space-y-5">
+          {planningDescription.objective && (
+            <section>
+              <h2 className="text-sm font-semibold">Mục tiêu công việc</h2>
+              <MarkdownEditor
+                className="mt-2"
+                defaultValue={planningDescription.objective}
+                editable={false}
+              />
+            </section>
+          )}
+          {planningDescription.acceptanceCriteria.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold">Tiêu chí nghiệm thu</h2>
+              <ul className="mt-2 list-disc space-y-1.5 ps-5 text-sm">
+                {planningDescription.acceptanceCriteria.map((criterion, index) => (
+                  <li key={`${criterion}-${index}`} dir="auto">
+                    {criterion}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      ) : (
+        (canEdit || issue.description.trim() !== '') && (
+          <MarkdownEditor
+            className="mt-4"
+            placeholder={tEditor('descriptionPlaceholder')}
+            defaultValue={issue.description}
+            key={`desc-${issue.updatedAt}-${replacements}`}
+            editable={canEdit}
+            onReady={setDescEditor}
+            uploadFile={uploadFile}
+            imageAttachments={imageAttachments}
+            mentions={textMentions}
+            onBlur={(md) => {
+              if (md !== issue.description) patch({ description: md });
+            }}
+          />
+        )
       )}
 
       {fieldDefs
@@ -189,44 +334,132 @@ export default function IssueDetailContent({
     </>
   );
 
-  // The collapsible sections under the written content. Where the Properties are
-  // not a sidebar of their own they go between the two, so the sections stay at
-  // the bottom of the column.
-  const sections = (
-    <>
-      <IssueAttachmentsPanel
-        issueId={issue.id}
-        onInsert={insertAttachment}
-        onReplaced={() => setReplacements((n) => n + 1)}
-        readOnly={!canEdit}
-      />
+  const attachments = (
+    <IssueAttachmentsPanel
+      issueId={issue.id}
+      onInsert={insertAttachment}
+      onReplaced={() => setReplacements((n) => n + 1)}
+      readOnly={!canEdit}
+    />
+  );
 
+  // Keep the next work actions visible. Supporting context stays collapsed until
+  // the user needs it.
+  const workSections = (
+    <>
       {features.subtasks && <IssueSubtasksPanel project={project} issue={issue} />}
 
       {features.checklists && <IssueChecklistsPanel issue={issue} />}
 
-      {features.timeLogging && <IssueWorklogPanel project={project} issue={issue} />}
-
-      <IssueDevelopmentPanel
-        issueId={issue.id}
-        identifier={issue.identifier}
-        issueTitle={issue.title}
-        links={issue.development ?? []}
-        canEdit={canEdit}
-        canManage={canManageDevelopment}
-      />
-
-      {features.documents && (
-        <IssueDocumentsPanel
-          projectKey={project.project.ref}
-          issueId={issue.id}
-          canRead={canReadDocuments}
-          canLink={canLinkDocuments}
-        />
-      )}
-
       <IssueLinksPanel project={project} issue={issue} />
+
+      <details className="mt-6 border-t pt-5">
+        <summary className="cursor-pointer text-sm font-medium">Thông tin nâng cao</summary>
+        <div className="mt-3">
+          {layout !== 'page' && attachments}
+
+          {planningDescription && (
+            <section className="mt-6 border-t pt-5">
+              <h3 className="text-sm font-semibold">Thông tin lập kế hoạch</h3>
+              {planningDescription.requiredSkills.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs text-muted-foreground">Kỹ năng cần thiết</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {planningDescription.requiredSkills.map((skill) => (
+                      <span
+                        className="rounded-full border px-2.5 py-1 text-xs"
+                        dir="auto"
+                        key={skill}
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {planningDescription.source && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-sm font-medium">Nguồn WBS</summary>
+                  <p className="mt-2 text-xs whitespace-pre-wrap text-muted-foreground" dir="auto">
+                    {planningDescription.source}
+                  </p>
+                </details>
+              )}
+              {canEdit && (
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-sm font-medium">
+                    Chỉnh sửa nội dung gốc
+                  </summary>
+                  <MarkdownEditor
+                    className="mt-3"
+                    placeholder={tEditor('descriptionPlaceholder')}
+                    defaultValue={issue.description}
+                    key={`desc-${issue.updatedAt}-${replacements}`}
+                    editable
+                    onReady={setDescEditor}
+                    uploadFile={uploadFile}
+                    imageAttachments={imageAttachments}
+                    mentions={textMentions}
+                    onBlur={(md) => {
+                      if (md !== issue.description) patch({ description: md });
+                    }}
+                  />
+                </details>
+              )}
+            </section>
+          )}
+
+          {features.timeLogging && <IssueWorklogPanel project={project} issue={issue} />}
+
+          <IssueDevelopmentPanel
+            issueId={issue.id}
+            identifier={issue.identifier}
+            issueTitle={issue.title}
+            links={issue.development ?? []}
+            canEdit={canEdit}
+            canManage={canManageDevelopment}
+          />
+
+          {features.documents && (
+            <IssueDocumentsPanel
+              projectKey={project.project.ref}
+              issueId={issue.id}
+              canRead={canReadDocuments}
+              canLink={canLinkDocuments}
+            />
+          )}
+
+          {layout === 'panel' && features.issueStats && (
+            <IssueStatusTimeline
+              issueId={issue.id}
+              columns={project.columns}
+              imageByUserId={new Map(project.assignees.map((a) => [a.userId, a.image]))}
+            />
+          )}
+        </div>
+      </details>
     </>
+  );
+
+  const handoff = (
+    <div className="space-y-5">
+      <div className="rounded-lg bg-muted/45 px-4 py-3">
+        <p className="text-xs font-medium text-muted-foreground">Quy trình bàn giao</p>
+        <p className="mt-1 text-sm font-medium">
+          Nộp sản phẩm <span aria-hidden="true">→</span> AI đánh giá{' '}
+          <span aria-hidden="true">→</span> Trưởng nhóm duyệt
+        </p>
+      </div>
+      {planningDescription?.deliverable && (
+        <section>
+          <h2 className="text-sm font-semibold">Sản phẩm cần bàn giao</h2>
+          <p className="mt-2 text-sm leading-6" dir="auto">
+            {planningDescription.deliverable}
+          </p>
+        </section>
+      )}
+      <IssueDeliverableReviewPanel issueId={issue.id} />
+    </div>
   );
 
   const renderProperties = (className?: string) => (
@@ -273,15 +506,16 @@ export default function IssueDetailContent({
   // member falls back to the initials circle.
   const imageByUserId = new Map(project.assignees.map((a) => [a.userId, a.image]));
 
-  const activity = (
+  const timeline = features.issueStats ? (
+    <IssueStatusTimeline
+      issueId={issue.id}
+      columns={project.columns}
+      imageByUserId={imageByUserId}
+    />
+  ) : null;
+
+  const conversation = (
     <>
-      {features.issueStats && (
-        <IssueStatusTimeline
-          issueId={issue.id}
-          columns={project.columns}
-          imageByUserId={imageByUserId}
-        />
-      )}
       <div ref={feedRef}>
         <IssueActivityFeed
           issueId={issue.id}
@@ -294,8 +528,6 @@ export default function IssueDetailContent({
           commentId={commentId}
         />
       </div>
-      {/* The reader came for that comment, and the bubble would rise while the feed
-          loads the pages before it. */}
       {commentId == null && (
         <LastCommentBubble
           key={issue.id}
@@ -308,35 +540,37 @@ export default function IssueDetailContent({
     </>
   );
 
+  const activity = (
+    <>
+      {timeline}
+      {conversation}
+    </>
+  );
+
   if (layout === 'page') {
-    // From xl the issue content sits at the start edge and the actions with
-    // Properties are fixed to the end edge (out of flow), so they never shift the
-    // content; the end margin reserves their width so the two do not overlap.
-    // Below xl there is no room for two columns, so the same two blocks are shown
-    // inside the content column instead — the actions above the title, Properties
-    // under the description.
     return (
-      <>
-        <div className="max-w-3xl xl:me-(--issue-properties-w)" style={propertiesWidthVar}>
+      <div
+        className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_var(--issue-properties-w)] xl:items-start xl:gap-x-12"
+        style={propertiesWidthVar}
+      >
+        <main className="max-w-3xl min-w-0">
           <div className="sticky top-0 z-10 -mt-6 bg-background/85 pt-6 pb-3 backdrop-blur-md xl:hidden">
             {actions}
           </div>
           {heading}
-          <div className="xl:hidden">{renderProperties()}</div>
-          {sections}
-          {activity}
-        </div>
-        <aside
-          className="hidden xl:fixed xl:end-6 xl:top-16 xl:block xl:w-(--issue-properties-w)"
-          style={propertiesWidthVar}
-        >
-          {propertiesGrip}
-          <div className="max-h-[calc(100vh-5.5rem)] overflow-y-auto">
-            {actions}
+          {workSections}
+          {handoff}
+        </main>
+        <aside className="relative min-w-0 xl:sticky xl:top-16 xl:col-start-2 xl:row-span-2 xl:row-start-1">
+          <div className="hidden xl:block">{propertiesGrip}</div>
+          <div className="xl:max-h-[calc(100vh-5.5rem)] xl:overflow-y-auto xl:overscroll-contain">
+            <div className="hidden xl:block">{actions}</div>
             {sidebarProperties}
+            {attachments}
           </div>
         </aside>
-      </>
+        <div className="max-w-3xl min-w-0 xl:col-start-1 xl:row-start-2">{activity}</div>
+      </div>
     );
   }
 
@@ -353,7 +587,8 @@ export default function IssueDetailContent({
             <div className="@3xl:hidden">{actions}</div>
             {heading}
             <div className="@3xl:hidden">{renderProperties()}</div>
-            {sections}
+            {workSections}
+            {handoff}
             {activity}
           </div>
           <aside
@@ -374,11 +609,23 @@ export default function IssueDetailContent({
   // it the bubble's parent would be the panel's scroll container, which bounds a
   // sticky child to the first screen of the scroll.
   return (
-    <div>
-      {heading}
-      {renderProperties()}
-      {sections}
-      {activity}
-    </div>
+    <Tabs defaultValue={commentId == null ? 'work' : 'discussion'} className="gap-0">
+      <TabsList
+        variant="line"
+        className="sticky top-[63px] z-10 mb-5 bg-card/95 backdrop-blur-md"
+        aria-label="Nội dung công việc"
+      >
+        <TabsTrigger value="work">Công việc</TabsTrigger>
+        <TabsTrigger value="handoff">Bàn giao</TabsTrigger>
+        <TabsTrigger value="discussion">Trao đổi</TabsTrigger>
+      </TabsList>
+      <TabsContent value="work">
+        {heading}
+        {renderProperties()}
+        {workSections}
+      </TabsContent>
+      <TabsContent value="handoff">{handoff}</TabsContent>
+      <TabsContent value="discussion">{conversation}</TabsContent>
+    </Tabs>
   );
 }

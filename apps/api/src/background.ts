@@ -6,6 +6,7 @@ import { pruneAgentTraces } from '#modules/agents/core/runtime/trace-retention';
 import { sweepStaleIssues } from '#modules/issues/auto-archive';
 import { sweepExpiredShares } from '#modules/share/service';
 import { runScheduledMonitoring } from '#modules/monitoring/scheduler';
+import { runTaskLifecycleNotifications } from '#modules/notifications/lifecycle';
 
 // The api's background jobs, started by index.ts rather than assembled into the app,
 // so importing the app in a test starts nothing. Several api replicas run them without
@@ -29,6 +30,7 @@ export function startBackgroundJobs(): void {
   startLoop('share-expiry', expireShares, () => intEnv('SHARE_EXPIRY_INTERVAL_MS', 60_000));
   startLoop('agent-traces', pruneTraces, () => intEnv('AGENT_TRACE_PRUNE_INTERVAL_MS', 3_600_000));
   startLoop('monitoring', runMonitoring, () => 300_000);
+  startLoop('task-lifecycle-notifications', runTaskLifecycleNotifications, () => 300_000);
 }
 
 async function autoArchive(): Promise<void> {

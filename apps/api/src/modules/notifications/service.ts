@@ -31,6 +31,9 @@ export const NOTIFICATION_TYPES = [
   'mentioned',
   'commented',
   'state_changed',
+  'ready',
+  'reminder',
+  'escalation',
   'monitoring',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -68,17 +71,21 @@ async function actorName(id: string | null): Promise<string | null> {
 }
 
 // commentId names the comment the event is about, which its email and Telegram link to.
-async function insertNotifications(
+export async function insertNotifications(
   rows: NewNotificationRow[],
   commentId: number | null = null,
 ): Promise<void> {
   if (rows.length === 0) return;
   const name = await actorName(rows[0].actorUserId);
-  await db.insert(notification).values(rows.map((r) => ({ ...r, actorName: name })));
+  const inserted = await db
+    .insert(notification)
+    .values(rows.map((r) => ({ ...r, actorName: name })))
+    .onConflictDoNothing()
+    .returning();
   // Fan out to the project's enabled delivery channels (email, Telegram). Best-effort:
   // a delivery failure must not break the inbox insert or the domain mutation.
   try {
-    await enqueueOutbound(rows, name, commentId);
+    await enqueueOutbound(inserted as NewNotificationRow[], name, commentId);
   } catch (err) {
     console.error('[notifications] outbound enqueue failed:', err);
   }
@@ -199,6 +206,7 @@ export async function notifyIssueChange(input: {
   issueId: number;
   actorUserId: string | null;
   assignedUserId?: string | null;
+  assignedMessage?: string | null;
   assignedActivityId?: number | null;
   statusChanged?: boolean;
   statusActivityId?: number | null;
@@ -218,6 +226,7 @@ export async function notifyIssueChange(input: {
           sourceActivityId: input.assignedActivityId ?? null,
           type: 'assigned',
           actorUserId: actor,
+          message: input.assignedMessage ?? null,
         });
       }
     }

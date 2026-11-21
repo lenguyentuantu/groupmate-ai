@@ -173,7 +173,12 @@ export default function DocumentTree({
         <div className="mb-3 grid size-10 place-items-center rounded-full bg-muted text-muted-foreground">
           <FilePlus2 className="size-4" />
         </div>
-        <p className="text-sm font-medium">{t('noResults')}</p>
+        <p className="text-sm font-medium">{searching ? t('noResults') : t('emptyTitle')}</p>
+        {!searching && (
+          <p className="mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+            {t('emptyDescription')}
+          </p>
+        )}
         {canCreate && !searching && (
           <Button
             type="button"

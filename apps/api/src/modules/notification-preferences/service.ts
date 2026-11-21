@@ -6,12 +6,26 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 // absent means the member has not opted in and receives nothing (opt-in default).
 
 // The issue events a member can subscribe to, matching the inbox notification types.
-export type EventKey = 'assigned' | 'mentioned' | 'commented' | 'state_changed' | 'monitoring';
+export type EventKey =
+  | 'assigned'
+  | 'mentioned'
+  | 'commented'
+  | 'state_changed'
+  | 'ready'
+  | 'reminder'
+  | 'escalation'
+  | 'monitoring';
 export type EventToggles = Record<EventKey, boolean>;
 
 export interface NotificationPreferenceDto {
   emailEvents: EventToggles;
   telegramEvents: EventToggles;
+}
+interface NotificationPreferenceInput {
+  emailEvents: Partial<EventToggles> &
+    Pick<EventToggles, 'assigned' | 'mentioned' | 'commented' | 'state_changed' | 'monitoring'>;
+  telegramEvents: Partial<EventToggles> &
+    Pick<EventToggles, 'assigned' | 'mentioned' | 'commented' | 'state_changed' | 'monitoring'>;
 }
 
 function emptyEvents(): EventToggles {
@@ -20,6 +34,9 @@ function emptyEvents(): EventToggles {
     mentioned: false,
     commented: false,
     state_changed: false,
+    ready: false,
+    reminder: false,
+    escalation: false,
     monitoring: false,
   };
 }
@@ -36,6 +53,9 @@ function toToggles(value: unknown): EventToggles {
     mentioned: Boolean(o.mentioned),
     commented: Boolean(o.commented),
     state_changed: Boolean(o.state_changed),
+    ready: Boolean(o.ready),
+    reminder: Boolean(o.reminder),
+    escalation: Boolean(o.escalation),
     monitoring: Boolean(o.monitoring),
   };
 }
@@ -72,9 +92,12 @@ export async function getPreferences(
 export async function setPreferences(
   userId: string,
   projectId: number,
-  input: NotificationPreferenceDto,
+  input: NotificationPreferenceInput,
 ): Promise<NotificationPreferenceDto> {
-  const values = { emailEvents: input.emailEvents, telegramEvents: input.telegramEvents };
+  const values = {
+    emailEvents: toToggles(input.emailEvents),
+    telegramEvents: toToggles(input.telegramEvents),
+  };
   await db
     .insert(userNotificationPreference)
     .values({ userId, projectId, ...values })

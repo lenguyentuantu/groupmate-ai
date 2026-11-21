@@ -23,6 +23,10 @@ import {
   notifyTextMentions,
 } from '#modules/notifications/service';
 import { listStatusTimeline } from './status-history';
+import {
+  assignmentReadinessMessage,
+  reconcileProjectReadiness,
+} from '#modules/notifications/lifecycle';
 
 // Issue timeline: comments and change-log activity in one table (issue_activity).
 // kind selects which columns a row uses. The author is the session user
@@ -785,10 +789,13 @@ export async function logIssueUpdate(
       issueId: after.id,
       actorUserId: actorId(actor),
       assignedUserId: assigneeChanged ? after.assigneeUserId : null,
+      assignedMessage:
+        assigneeChanged && after.assigneeUserId ? await assignmentReadinessMessage(after.id) : null,
       assignedActivityId: idByAction.get('assignee') ?? null,
       statusChanged,
       statusActivityId: idByAction.get('status') ?? null,
     });
+    await reconcileProjectReadiness(row.projectId, { notifyReady: statusChanged });
   }
   if (descriptionChanged) {
     await notifyTextMentions({

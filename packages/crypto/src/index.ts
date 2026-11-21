@@ -29,6 +29,13 @@ export interface EncryptedSecret {
   authTag: string; // base64
 }
 
+export class SecretDecryptionError extends Error {
+  constructor() {
+    super('Encrypted secret could not be authenticated');
+    this.name = 'SecretDecryptionError';
+  }
+}
+
 // Encrypts a UTF-8 plaintext into base64 ciphertext + iv + auth tag.
 export function encryptSecret(plaintext: string): EncryptedSecret {
   const iv = randomBytes(IV_BYTES);
@@ -45,13 +52,18 @@ export function encryptSecret(plaintext: string): EncryptedSecret {
 // Decrypts a value produced by encryptSecret. Throws if the key is wrong or the
 // data was tampered with (GCM auth failure).
 export function decryptSecret(enc: EncryptedSecret): string {
-  const decipher = createDecipheriv(ALGORITHM, getKey(), Buffer.from(enc.iv, 'base64'));
-  decipher.setAuthTag(Buffer.from(enc.authTag, 'base64'));
-  const plaintext = Buffer.concat([
-    decipher.update(Buffer.from(enc.ciphertext, 'base64')),
-    decipher.final(),
-  ]);
-  return plaintext.toString('utf8');
+  const key = getKey();
+  try {
+    const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(enc.iv, 'base64'));
+    decipher.setAuthTag(Buffer.from(enc.authTag, 'base64'));
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(enc.ciphertext, 'base64')),
+      decipher.final(),
+    ]);
+    return plaintext.toString('utf8');
+  } catch {
+    throw new SecretDecryptionError();
+  }
 }
 
 // HMAC-SHA256 over `${timestamp}.${body}`, formatted as the X-Itsaplan-Signature header

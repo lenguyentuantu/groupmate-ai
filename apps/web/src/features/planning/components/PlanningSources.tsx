@@ -24,9 +24,9 @@ export default function PlanningSources({
   const upload = useUploadPlanSource(projectRef);
   return (
     <section className="space-y-3">
-      <h2 className="font-semibold">{t('sources')}</h2>
-      <p>{t('limits')}</p>
-      <label className="block">
+      <h2 className="font-heading font-semibold">{t('sources')}</h2>
+      <p className="text-sm leading-5 text-muted-foreground">{t('limits')}</p>
+      <label className="block text-sm font-medium">
         {t('upload')}
         <Input
           type="file"
@@ -61,7 +61,10 @@ export default function PlanningSources({
       {upload.isPending && <p role="status">{t('extracting')}</p>}
       {files.isError && <p role="alert">{files.error.message}</p>}
       {files.data?.items.map((file) => (
-        <label className="flex gap-2" key={file.attachmentId}>
+        <label
+          className="flex gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+          key={file.attachmentId}
+        >
           <input
             type="checkbox"
             checked={selected.includes(file.attachmentId)}
@@ -77,7 +80,9 @@ export default function PlanningSources({
           {file.filename}
         </label>
       ))}
-      <ListPager paging={paging} total={files.data?.total ?? 0} />
+      {files.data && files.data.total > paging.params.pageSize && (
+        <ListPager paging={paging} total={files.data.total} />
+      )}
     </section>
   );
 }

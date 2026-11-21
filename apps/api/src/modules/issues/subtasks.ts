@@ -3,7 +3,7 @@ import { and, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { HttpError } from '#shared/lib';
 import { archiveIssue, deleteIssue, restoreIssue, updateIssue } from './service';
-import type { AttachmentRow } from '#modules/attachments/service';
+type StoredObject = { s3Key: string };
 
 // An issue's subtasks: issues carrying its id in parent_id. The hierarchy is one
 // level deep (see assertParent in service.ts), so a subtask has no subtasks of its
@@ -114,7 +114,7 @@ export async function disposeSubtasksOf(
   action: 'delete' | 'archive',
   disposition: SubtaskDisposition | undefined,
   actorUserId?: string | null,
-): Promise<AttachmentRow[]> {
+): Promise<StoredObject[]> {
   const parents = await issuesWithSubtasks(projectId, issueIds);
   if (parents.length === 0) return [];
   if (!disposition)
@@ -123,7 +123,7 @@ export async function disposeSubtasksOf(
   // removed is rejected before anything is written.
   const newParentId =
     disposition.mode === 'reassign' ? reassignTarget(disposition, issueIds) : null;
-  const attachments: AttachmentRow[] = [];
+  const attachments: StoredObject[] = [];
   for (const parentId of parents)
     attachments.push(
       ...(await disposeSubtasks(parentId, action, disposition.mode, newParentId, actorUserId)),
@@ -151,11 +151,11 @@ async function disposeSubtasks(
   mode: SubtaskMode,
   newParentId: number | null,
   actorUserId?: string | null,
-): Promise<AttachmentRow[]> {
+): Promise<StoredObject[]> {
   const subtasks = await listSubtasks(issueId);
 
   if (mode === 'cascade') {
-    const attachments: AttachmentRow[] = [];
+    const attachments: StoredObject[] = [];
     for (const subtask of subtasks) {
       if (action === 'delete')
         attachments.push(...((await deleteIssue(subtask.id, actorUserId)) ?? []));

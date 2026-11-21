@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ProjectDocumentSummary } from '@/lib/api/endpoints/documents';
+import type { ProjectFile } from '@/lib/api/endpoints/documents';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { useMoveDocument, useSetDocumentFavorite } from '../services/documents.service';
 import { DOCUMENT_LIST_TABS, type DocumentListTab } from '../utils/documentList';
 import DocumentTree, { type DocumentSort } from './DocumentTree';
+import ProjectSharedFiles from './ProjectSharedFiles';
 
 const SORTS = [
   'position',
@@ -64,11 +66,18 @@ export default function DocumentsIndex({
   authorNames,
   reorderSafe,
   creating,
+  sharedFiles,
+  sharedFilesLoading,
+  sharedFilesFailed,
+  uploadingSharedFile,
   onSearchChange,
   onTabChange,
   onCreate,
   onUpload,
+  onUploadSharedFile,
   onRetry,
+  onRetrySharedFiles,
+  onShowDeliverables,
 }: {
   projectKey: string;
   documents: ProjectDocumentSummary[];
@@ -82,11 +91,18 @@ export default function DocumentsIndex({
   authorNames: Record<string, string>;
   reorderSafe: boolean;
   creating: boolean;
+  sharedFiles: ProjectFile[];
+  sharedFilesLoading: boolean;
+  sharedFilesFailed: boolean;
+  uploadingSharedFile: boolean;
   onSearchChange: (value: string) => void;
   onTabChange: (tab: DocumentListTab) => void;
   onCreate: (parentId: number | null) => void;
   onUpload: (file: File) => void;
+  onUploadSharedFile: (file: File) => void;
   onRetry: () => void;
+  onRetrySharedFiles: () => void;
+  onShowDeliverables: () => void;
 }) {
   const t = useTranslations('documents');
   const move = useMoveDocument(projectKey);
@@ -106,6 +122,7 @@ export default function DocumentsIndex({
     setPreferences((p) => ({ ...p, range }));
   const scrollRef = useRef<HTMLDivElement>(null);
   const uploadInput = useRef<HTMLInputElement>(null);
+  const sharedFileInput = useRef<HTMLInputElement>(null);
   const restored = useRef(false);
   const lastScroll = useRef(preferences.scroll);
   useEffect(() => {
@@ -164,60 +181,127 @@ export default function DocumentsIndex({
   return (
     <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-background">
       <header className="shrink-0 border-b bg-background/95 px-4 backdrop-blur md:px-6">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4">
+        <div className="mx-auto flex min-h-20 w-full max-w-6xl items-center justify-between gap-4 py-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="grid size-7 shrink-0 place-items-center rounded-md bg-foreground text-background">
-              <BookOpenText className="size-3.5" />
+            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <BookOpenText className="size-4.5" />
             </div>
-            <div className="flex min-w-0 items-baseline gap-2">
-              <h1 className="truncate text-sm font-semibold tracking-[-0.01em]">{t('title')}</h1>
-              {!loading && (
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {documents.length}
-                </span>
-              )}
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-baseline gap-2">
+                <h1 className="truncate font-heading text-xl font-semibold tracking-[-0.02em]">
+                  {t('hubTitle')}
+                </h1>
+                {!loading && (
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {documents.length}
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 hidden truncate text-xs text-muted-foreground sm:block">
+                {t('indexDescription')}
+              </p>
             </div>
           </div>
-          {canCreate && (
+          {(canCreate || canEdit) && (
             <div className="flex shrink-0 items-center gap-1.5">
-              <input
-                ref={uploadInput}
-                className="sr-only"
-                type="file"
-                accept=".md,.markdown,text/markdown"
-                aria-label={t('uploadMarkdown')}
-                disabled={creating}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.currentTarget.value = '';
-                  if (file) onUpload(file);
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-8 px-2.5 shadow-none"
-                disabled={creating}
-                onClick={() => uploadInput.current?.click()}
-              >
-                <Upload />
-                <span className="hidden sm:inline">{t('uploadMarkdown')}</span>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="h-8 px-2.5 shadow-none"
-                disabled={creating}
-                onClick={() => onCreate(null)}
-              >
-                {creating ? <LoaderCircle className="animate-spin" /> : <Plus />}
-                <span className="hidden sm:inline">{t('newDocument')}</span>
-              </Button>
+              {canEdit && (
+                <>
+                  <input
+                    ref={sharedFileInput}
+                    className="sr-only"
+                    type="file"
+                    aria-label={t('uploadSharedFile')}
+                    disabled={uploadingSharedFile}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.currentTarget.value = '';
+                      if (file) onUploadSharedFile(file);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 shadow-none"
+                    disabled={uploadingSharedFile}
+                    onClick={() => sharedFileInput.current?.click()}
+                  >
+                    {uploadingSharedFile ? <LoaderCircle className="animate-spin" /> : <Upload />}
+                    <span className="hidden sm:inline">{t('uploadSharedFile')}</span>
+                  </Button>
+                </>
+              )}
+              {canCreate && (
+                <>
+                  <input
+                    ref={uploadInput}
+                    className="sr-only"
+                    type="file"
+                    accept=".md,.markdown,text/markdown"
+                    aria-label={t('uploadMarkdown')}
+                    disabled={creating}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.currentTarget.value = '';
+                      if (file) onUpload(file);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2.5 shadow-none"
+                    disabled={creating}
+                    onClick={() => uploadInput.current?.click()}
+                  >
+                    <Upload />
+                    <span className="hidden sm:inline">{t('uploadMarkdown')}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 px-2.5 shadow-none"
+                    disabled={creating}
+                    onClick={() => onCreate(null)}
+                  >
+                    {creating ? <LoaderCircle className="animate-spin" /> : <Plus />}
+                    <span className="hidden sm:inline">{t('newDocument')}</span>
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
       </header>
+
+      <div className="shrink-0 border-b px-4 md:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-6" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected="true"
+            className="relative h-11 border-b-2 border-foreground px-0.5 text-sm font-medium"
+          >
+            {t('sharedDocuments')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected="false"
+            className="h-11 px-0.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+            onClick={onShowDeliverables}
+          >
+            {t('submittedDeliverables')}
+          </button>
+        </div>
+      </div>
+
+      <ProjectSharedFiles
+        files={sharedFiles}
+        loading={sharedFilesLoading}
+        failed={sharedFilesFailed}
+        onRetry={onRetrySharedFiles}
+      />
 
       <div className="shrink-0 border-b px-4 md:px-6">
         <div

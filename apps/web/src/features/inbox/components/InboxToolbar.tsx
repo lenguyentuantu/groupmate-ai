@@ -21,8 +21,21 @@ const TYPES: NotificationType[] = [
   'mentioned',
   'commented',
   'state_changed',
+  'ready',
+  'reminder',
+  'escalation',
   'monitoring',
 ];
+const TYPE_FALLBACK: Record<NotificationType, string> = {
+  assigned: 'Assigned',
+  mentioned: 'Mentioned',
+  commented: 'Commented',
+  state_changed: 'Status changed',
+  ready: 'Ready',
+  reminder: 'Start reminder',
+  escalation: 'Leader attention',
+  monitoring: 'Monitoring',
+};
 
 // The inbox list header: title with unread count, a type filter, display toggles
 // (show read / snoozed), and the bulk-action menu.
@@ -75,7 +88,7 @@ export default function InboxToolbar({
                 onCheckedChange={() => toggleType(type)}
                 onSelect={(e) => e.preventDefault()}
               >
-                {type === 'monitoring' ? 'Monitoring' : t(`types.${type}`)}
+                {t.has(`types.${type}`) ? t(`types.${type}`) : TYPE_FALLBACK[type]}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>

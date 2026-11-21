@@ -1,16 +1,16 @@
 import type { EmailLocaleTexts } from '../types';
 
 const INVITE_NEXT =
-  'Open the invitation to sign in or create an account. If you did not expect this invitation, you can ignore this email.';
+  'Mở lời mời để đăng nhập hoặc tạo tài khoản. Nếu bạn không mong đợi lời mời này, bạn có thể bỏ qua email.';
 
 export const en: EmailLocaleTexts = {
-  linkHint: 'Or open this link:',
+  linkHint: 'Hoặc mở liên kết này:',
   words: {
-    someone: 'Someone',
-    untitled: 'Untitled',
-    owner: 'owner',
-    manager: 'manager',
-    member: 'member',
+    someone: 'Một thành viên',
+    untitled: 'Chưa có tên',
+    owner: 'chủ sở hữu',
+    manager: 'quản lý',
+    member: 'thành viên',
   },
   templates: {
     reset: {
@@ -29,14 +29,14 @@ export const en: EmailLocaleTexts = {
       button: 'Sign in',
     },
     inviteProject: {
-      subject: "You were invited to {project} on It's a Plan",
-      body: `{inviter} invited you to join {project} as {role}.\n\n${INVITE_NEXT}`,
-      button: 'Open the invitation',
+      subject: 'Bạn được mời tham gia dự án {project}',
+      body: `{inviter} đã mời bạn tham gia dự án {project} với vai trò {role}.\n\n${INVITE_NEXT}`,
+      button: 'Mở lời mời',
     },
     inviteTeam: {
-      subject: "You were invited to {team} on It's a Plan",
-      body: `{inviter} invited you to join the team {team} as {role}.\n\n${INVITE_NEXT}`,
-      button: 'Open the invitation',
+      subject: 'Bạn được mời tham gia nhóm {team}',
+      body: `{inviter} đã mời bạn tham gia nhóm {team} với vai trò {role}.\n\n${INVITE_NEXT}`,
+      button: 'Mở lời mời',
     },
     assigned: {
       subject: '{ref}: assigned to you',

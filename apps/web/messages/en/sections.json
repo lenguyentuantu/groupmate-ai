@@ -72,64 +72,64 @@
   },
   "settings": {
     "general": {
-      "label": "General",
-      "description": "The project's name, description, and the sections it shows."
+      "label": "Chung",
+      "description": "Tên, mô tả và các khu vực hiển thị của dự án."
     },
     "states": {
-      "label": "States",
-      "description": "The workflow states issues move through, each shown as a column."
+      "label": "Trạng thái",
+      "description": "Các trạng thái công việc trong quy trình, mỗi trạng thái hiển thị thành một cột."
     },
     "issue-types": {
-      "label": "Issue types",
-      "description": "The kinds of issues this project can hold, each with its own fields."
+      "label": "Loại công việc",
+      "description": "Các loại công việc của dự án và trường dữ liệu tương ứng."
     },
     "labels": {
-      "label": "Labels",
-      "description": "Tags for organizing and filtering issues across the project."
+      "label": "Nhãn",
+      "description": "Nhãn dùng để tổ chức và lọc công việc trong dự án."
     },
     "custom-fields": {
-      "label": "Custom fields",
-      "description": "Extra fields shown on issues, global or scoped to an issue type."
+      "label": "Trường tùy chỉnh",
+      "description": "Các trường bổ sung hiển thị trên công việc hoặc theo từng loại công việc."
     },
     "issue-templates": {
-      "label": "Issue templates",
-      "description": "Presets a new issue can be created from: its title, description, and properties."
+      "label": "Mẫu công việc",
+      "description": "Mẫu tiêu đề, mô tả và thuộc tính dùng khi tạo công việc."
     },
     "configuration": {
-      "label": "Configuration",
-      "description": "How subtasks close with their parent, and when stale issues are archived."
+      "label": "Cấu hình công việc",
+      "description": "Cách hoàn tất công việc con cùng công việc cha và lưu trữ công việc cũ."
     },
     "actions": {
-      "label": "Actions",
-      "description": "Buttons on an issue that set fields in one click."
+      "label": "Hành động nhanh",
+      "description": "Các nút cập nhật trường công việc chỉ với một lần chọn."
     },
     "schedules": {
-      "label": "Schedules",
-      "description": "Run agent tasks on a recurring schedule."
+      "label": "Lịch chạy AI",
+      "description": "Chạy tác vụ AI theo lịch lặp lại."
     },
     "webhooks": {
-      "label": "Webhooks",
-      "description": "Send project events to external URLs, signed with a per-webhook secret."
+      "label": "Webhook",
+      "description": "Gửi sự kiện dự án đến URL bên ngoài với chữ ký riêng."
     },
     "forms": {
       "label": "Forms",
       "description": "Let anyone with a link file an issue here."
     },
     "git": {
-      "label": "Repositories",
-      "description": "Close issues when their pull requests merge on GitHub, GitLab, Gitea, Forgejo, or Bitbucket."
+      "label": "Kho mã nguồn",
+      "description": "Hoàn tất công việc khi pull request hoặc merge request được hợp nhất."
     },
     "import-export": {
-      "label": "Import/Export",
-      "description": "Bring issues, comments, and labels in from a self-hosted Plane instance, or export this project's data as JSON."
+      "label": "Nhập/Xuất dữ liệu",
+      "description": "Nhập công việc, bình luận và nhãn hoặc xuất dữ liệu dự án dưới dạng JSON."
     },
     "ai-agents": {
-      "label": "AI Agents",
-      "description": "AI agents working in this project."
+      "label": "AI của dự án",
+      "description": "Các AI đang làm việc trong dự án này."
     },
     "queue": {
-      "label": "Agent runs",
-      "description": "Runs of the project's internal and external agents: in progress, waiting and past."
+      "label": "Lượt chạy AI",
+      "description": "Các lượt chạy AI nội bộ và bên ngoài của dự án: đang chạy, chờ và đã hoàn tất."
     }
   },
   "previews": {

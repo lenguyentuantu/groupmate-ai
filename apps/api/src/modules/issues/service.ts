@@ -10,6 +10,7 @@ import {
   issueFieldValue,
   issueFieldOption,
   issueAttachment,
+  deliverableSubmission,
   issueKeyAlias,
   issueWorklog,
   customField,
@@ -65,8 +66,12 @@ import { autoWatchIssue } from './watchers';
 import { attachLoggedMinutes } from './worklogs';
 import { recordCycleChange } from './cycle-history';
 import { recordStatusChange } from './status-history';
-import { mapAttachment, type AttachmentRow } from '#modules/attachments/service';
+import { mapAttachment } from '#modules/attachments/service';
 import { notifyIssueChange, notifyTextMentions } from '#modules/notifications/service';
+import {
+  assignmentReadinessMessage,
+  reconcileProjectReadiness,
+} from '#modules/notifications/lifecycle';
 import { emitIssueEvent } from './webhook-payload';
 import {
   getAssignTriggerAgent,
@@ -1209,8 +1214,10 @@ export async function createIssue(
       issueId,
       actorUserId: actorUserId ?? null,
       assignedUserId: created.assigneeUserId,
+      assignedMessage: await assignmentReadinessMessage(issueId),
     });
   }
+  await reconcileProjectReadiness(project.id, { notifyReady: false });
   // A description written on creation reaches the people it mentions, the same as
   // one written into an existing issue does.
   await notifyTextMentions({
@@ -1416,17 +1423,22 @@ async function enqueueDelegateRun(after: IssueRow, actor?: ActivityActor): Promi
 export async function deleteIssue(
   issueId: number,
   actorUserId?: string | null,
-): Promise<AttachmentRow[] | null> {
+): Promise<{ s3Key: string }[] | null> {
   // Read before the delete: the issue.deleted payload is the issue as it last read.
   const deleted = await getIssue(issueId);
   if (!deleted) return null;
   const attachments = await db.transaction(async (tx) => {
-    const attachmentRows = await tx
-      .select()
-      .from(issueAttachment)
-      .where(eq(issueAttachment.issueId, issueId));
+    const [attachmentRows, deliverableRows] = await Promise.all([
+      tx.select().from(issueAttachment).where(eq(issueAttachment.issueId, issueId)),
+      tx
+        .select({ s3Key: deliverableSubmission.s3Key })
+        .from(deliverableSubmission)
+        .where(eq(deliverableSubmission.issueId, issueId)),
+    ]);
     const removed = await tx.delete(issue).where(eq(issue.id, issueId)).returning({ id: issue.id });
-    return removed.length ? attachmentRows.map(mapAttachment) : null;
+    return removed.length
+      ? [...attachmentRows.map(mapAttachment), ...deliverableRows].map(({ s3Key }) => ({ s3Key }))
+      : null;
   });
   if (!attachments) return null;
   await deleteThreadsWhere({ issueId });
@@ -1624,9 +1636,9 @@ export async function bulkDeleteIssues(
   projectId: number,
   ids: number[],
   actorUserId: string | null,
-): Promise<{ deleted: number; attachments: AttachmentRow[] }> {
+): Promise<{ deleted: number; attachments: { s3Key: string }[] }> {
   const valid = await issuesInProject(projectId, ids);
-  const attachments: AttachmentRow[] = [];
+  const attachments: { s3Key: string }[] = [];
   for (const id of valid) {
     const rows = await deleteIssue(id, actorUserId);
     if (rows) attachments.push(...rows);

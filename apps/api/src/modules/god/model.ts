@@ -218,6 +218,21 @@ export const StorageSettingsBody = t.Object({
   projectQuotaMb: t.Optional(t.Integer({ minimum: 0 })),
 });
 
+export const AiProviderSettingsResponse = t.Object({
+  enabled: t.Boolean(),
+  allowProjects: t.Boolean(),
+  providerId: t.Literal('openai'),
+  model: t.String(),
+  hasApiKey: t.Boolean(),
+});
+
+export const AiProviderSettingsBody = t.Object({
+  enabled: t.Optional(t.Boolean()),
+  allowProjects: t.Optional(t.Boolean()),
+  model: t.Optional(t.String({ minLength: 1, maxLength: 200 })),
+  apiKey: t.Optional(t.String({ maxLength: 2048 })),
+});
+
 export const TelegramSettingsResponse = t.Object({
   enabled: t.Boolean(),
   // Resolved from Telegram when the token is saved. Shown so the administrator can

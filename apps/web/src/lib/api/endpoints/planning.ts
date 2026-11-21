@@ -56,6 +56,7 @@ export interface PlanningCandidate {
   name: string;
   isRealMember: boolean;
   skills: string[];
+  skillProficiencies?: { name: string; proficiency: number }[];
   weeklyCapacityMinutes: number | null;
   knownWorkloadMinutes: number | null;
   unknownWorkloadTasks: number;
@@ -63,6 +64,36 @@ export interface PlanningCandidate {
 export interface ProposalAssignment {
   taskId: string;
   candidateId: string | null;
+  recommendedCandidateId?: string | null;
+  status?:
+    | 'QUALIFIED_ASSIGNMENT'
+    | 'PARTIAL_RECOMMENDATION'
+    | 'NO_SAFE_CANDIDATE'
+    | 'INSUFFICIENT_DATA'
+    | 'CAPACITY_CONFLICT'
+    | 'MANUAL_DECISION';
+  origin?: 'deterministic' | 'ai_assisted' | 'manual';
+  matchQuality?: number;
+  skillEvidence?: {
+    requiredSkill: string;
+    candidateSkills: string[];
+    relationship: 'direct' | 'equivalent' | 'related' | 'inferred' | 'missing';
+    proficiency: number | null;
+  }[];
+  alternatives?: {
+    candidateId: string;
+    matchQuality: number;
+    matchingSkills: string[];
+    missingSkills: string[];
+    remainingCapacityMinutes: number | null;
+    qualified: boolean;
+    capacityStatus?: 'sufficient' | 'insufficient' | 'unknown';
+    source?: 'deterministic' | 'ai_assisted';
+    reason?: string | null;
+  }[];
+  suggestedAction?: string | null;
+  concerns?: string[];
+  reviewRequired?: boolean;
   matchingSkills: string[];
   missingSkills: string[];
   reason: string;
@@ -86,7 +117,13 @@ export interface PlanningProposal {
     canRunInParallel: boolean;
   }[];
   warnings: string[];
-  aiEnrichment?: 'applied' | 'not_requested' | 'failed';
+  planningInsights?: {
+    allocationStrategy: string;
+    bottlenecks: string[];
+    risks: string[];
+    tradeoffs: string[];
+  } | null;
+  aiEnrichment?: 'applied' | 'partially_applied' | 'not_requested' | 'failed';
   updatedAt?: string;
 }
 export interface ReadinessIssue {
@@ -240,6 +277,9 @@ export function normalizePlanningProposalResponse(value: unknown): PlanningPropo
     assignments: assignments as ProposalAssignment[],
     schedule: schedule as PlanningProposal['schedule'],
     warnings: warnings as string[],
+    ...(content.planningInsights !== undefined
+      ? { planningInsights: content.planningInsights as PlanningProposal['planningInsights'] }
+      : {}),
     ...(content.aiEnrichment !== undefined
       ? { aiEnrichment: content.aiEnrichment as PlanningProposal['aiEnrichment'] }
       : {}),

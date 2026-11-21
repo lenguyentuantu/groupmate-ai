@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useAuthConfig } from '@/services/authConfig.service';
 import AuthFormHeader from '../AuthFormHeader';
 import AuthMessagePanel from '../AuthMessagePanel';
-import { AuthError, setNewPassword } from '../../services/auth.service';
+import { AuthError, safeAuthReturnTo, setNewPassword } from '../../services/auth.service';
 import { useAuthAction } from '../../hooks/useAuthAction';
 
 const DEAD_LINK_CODES = new Set(['INVALID_TOKEN', 'USER_NOT_FOUND']);
@@ -23,6 +23,7 @@ export default function AuthResetPasswordForm() {
   const router = useRouter();
   const token = params.get('token') ?? '';
   const email = params.get('email') ?? '';
+  const returnTo = safeAuthReturnTo(params.get('returnTo'));
   const linkError = params.get('error');
   // The api refuses /reset-password while the password form is off, so a link issued
   // before it was turned off must not offer a password field.
@@ -45,7 +46,10 @@ export default function AuthResetPasswordForm() {
       async () => {
         try {
           const { signedIn } = await setNewPassword({ token, email, newPassword: password });
-          router.push(signedIn ? '/' : '/login?reset=1');
+          const loginParams = new URLSearchParams({ reset: '1' });
+          if (returnTo) loginParams.set('returnTo', returnTo);
+          const destination = signedIn ? (returnTo ?? '/') : `/login?${loginParams.toString()}`;
+          router.push(destination);
           router.refresh();
         } catch (err) {
           if (err instanceof AuthError && DEAD_LINK_CODES.has(err.code ?? '')) {
@@ -79,7 +83,14 @@ export default function AuthResetPasswordForm() {
         title={t('resetPassword.deadLinkTitle')}
         description={t('resetPassword.deadLinkDescription')}
         footer={
-          <Link href="/forgot-password" className="underline underline-offset-4">
+          <Link
+            href={
+              returnTo
+                ? `/forgot-password?returnTo=${encodeURIComponent(returnTo)}`
+                : '/forgot-password'
+            }
+            className="underline underline-offset-4"
+          >
             {t('resetPassword.sendNewLink')}
           </Link>
         }

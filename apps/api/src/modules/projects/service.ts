@@ -8,6 +8,7 @@ import {
   issue,
   issueActivity,
   issueAttachment,
+  deliverableSubmission,
   issueType,
   project,
   projectColumn,
@@ -820,6 +821,10 @@ export async function deleteProject(projectId: number): Promise<void> {
       .from(issueAttachment)
       .innerJoin(issue, eq(issue.id, issueAttachment.issueId))
       .where(eq(issue.projectId, projectId));
+    const deliverableAssets = await tx
+      .select({ s3Key: deliverableSubmission.s3Key })
+      .from(deliverableSubmission)
+      .where(eq(deliverableSubmission.projectId, projectId));
     const chatAssets = await tx
       .select({ s3Key: chatAttachment.s3Key })
       .from(chatAttachment)
@@ -835,9 +840,13 @@ export async function deleteProject(projectId: number): Promise<void> {
       .innerJoin(initiative, eq(initiative.id, initiativeAttachment.initiativeId))
       .where(eq(initiative.projectId, projectId));
     await tx.delete(project).where(eq(project.id, projectId));
-    return [...issueAssets, ...chatAssets, ...documentAssets, ...initiativeAssets].map(
-      (asset) => asset.s3Key,
-    );
+    return [
+      ...issueAssets,
+      ...deliverableAssets,
+      ...chatAssets,
+      ...documentAssets,
+      ...initiativeAssets,
+    ].map((asset) => asset.s3Key);
   });
   await deleteObjects(assetKeys);
   for (const { teamId, userId } of provisioned) {

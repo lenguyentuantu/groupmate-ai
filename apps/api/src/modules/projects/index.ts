@@ -25,6 +25,7 @@ import {
   ProjectSearchPageResponse,
   ProjectSettingsResponse,
   MonitoringSettingsResponse,
+  TaskLifecycleSettingsResponse,
   SubtaskAutomationResponse,
   copyProjectBody,
   listProjectsQuery,
@@ -34,6 +35,7 @@ import {
   updateProjectBody,
   updateProjectSettingsBody,
   updateMonitoringSettingsBody,
+  updateTaskLifecycleSettingsBody,
   updateSubtaskAutomationBody,
 } from './model';
 import {
@@ -50,6 +52,10 @@ import {
   setEstimateSettings,
 } from './service';
 import { getMonitoringSettings, setMonitoringSchedule } from '#modules/monitoring/scheduler';
+import {
+  getTaskLifecycleSettings,
+  setTaskLifecycleSettings,
+} from '#modules/notifications/lifecycle';
 import { copyProject } from './copy';
 import { projectPreferences } from './preferences';
 
@@ -248,6 +254,26 @@ export const projectRoutes = new Elysia({ name: 'projects', detail: { tags: ['Pr
       projectOwner: true,
       response: { 200: MonitoringSettingsResponse, ...commonErrors },
       detail: { summary: "Update a project's monitoring schedule" },
+    },
+  )
+
+  .get(
+    '/projects/:projectKey/settings/task-lifecycle-notifications',
+    ({ project }) => getTaskLifecycleSettings(project.id),
+    {
+      projectMember: true,
+      response: { 200: TaskLifecycleSettingsResponse, ...accessErrors },
+      detail: { summary: "Get a project's task lifecycle notification settings" },
+    },
+  )
+  .patch(
+    '/projects/:projectKey/settings/task-lifecycle-notifications',
+    ({ project, body }) => setTaskLifecycleSettings(project.id, body),
+    {
+      body: updateTaskLifecycleSettingsBody,
+      projectOwner: true,
+      response: { 200: TaskLifecycleSettingsResponse, ...commonErrors },
+      detail: { summary: "Update a project's task lifecycle notification settings" },
     },
   )
 

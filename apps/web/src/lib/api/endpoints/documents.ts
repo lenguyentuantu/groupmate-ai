@@ -1,4 +1,4 @@
-import { request, uploadFile } from '@/lib/api/core/client';
+import { API_URL, request, uploadFile } from '@/lib/api/core/client';
 
 function withDocumentAssetUrl(asset: DocumentAsset): DocumentAsset {
   const match = asset.url.match(
@@ -41,6 +41,25 @@ export interface ProjectDocument extends ProjectDocumentSummary {
   shareIncludeChildren: boolean;
   shareIncludeIssues: boolean;
 }
+
+export interface ProjectFile {
+  id: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedBy: { id: string | null; name: string };
+  createdAt: string;
+  url: string;
+}
+
+export const projectFileUrl = (path: string, download = false) =>
+  `${API_URL}${path}${download ? '?download=1' : ''}`;
+
+export const listProjectFiles = (projectKey: string) =>
+  request<ProjectFile[]>(`/projects/${projectKey}/shared-files`);
+
+export const uploadProjectFile = (projectKey: string, file: File) =>
+  uploadFile<ProjectFile>(`/projects/${projectKey}/shared-files`, 'POST', file);
 
 export interface DocumentIssueLink {
   issueId: number;
